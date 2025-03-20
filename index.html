@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CubeWell - 3D Puzzle Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="canvas-container"></div>
+        
+        <div id="ui-container">
+            <div id="game-info">
+                <div id="score-display">Score: <span id="score">0</span></div>
+                <div id="level-display">Level: <span id="level">1</span></div>
+            </div>
+            
+            <div id="next-block-preview">
+                <h3>Next Block</h3>
+                <div id="preview-container"></div>
+            </div>
+            
+            <div id="mobile-controls">
+                <div id="movement-controls">
+                    <button id="move-left">←</button>
+                    <button id="move-right">→</button>
+                    <button id="move-forward">↑</button>
+                    <button id="move-backward">↓</button>
+                </div>
+                
+                <div id="rotation-controls">
+                    <button id="rotate-x">X</button>
+                    <button id="rotate-y">Y</button>
+                    <button id="rotate-z">Z</button>
+                </div>
+                
+                <button id="drop-button">DROP</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="menu-screen" class="screen">
+        <h1>CubeWell</h1>
+        <button id="start-game">Start Game</button>
+        <button id="high-scores-btn">High Scores</button>
+        <button id="settings-btn">Settings</button>
+    </div>
+    
+    <div id="game-over-screen" class="screen hidden">
+        <h2>Game Over</h2>
+        <p>Your score: <span id="final-score">0</span></p>
+        <button id="restart-game">Play Again</button>
+        <button id="back-to-menu">Main Menu</button>
+    </div>
+    
+    <div id="high-scores-screen" class="screen hidden">
+        <h2>High Scores</h2>
+        <ul id="high-scores-list"></ul>
+        <button class="back-btn">Back</button>
+    </div>
+    
+    <div id="settings-screen" class="screen hidden">
+        <h2>Settings</h2>
+        <div class="setting">
+            <label for="music-volume">Music Volume</label>
+            <input type="range" id="music-volume" min="0" max="100" value="50">
+        </div>
+        <div class="setting">
+            <label for="sfx-volume">Sound Effects Volume</label>
+            <input type="range" id="sfx-volume" min="0" max="100" value="50">
+        </div>
+        <div class="setting">
+            <label for="difficulty">Difficulty</label>
+            <select id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+        </div>
+        <button class="back-btn">Back</button>
+    </div>
+    
+    <!-- Load libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Load game scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/polycubes.js"></script>
+    <script src="js/pit.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 
