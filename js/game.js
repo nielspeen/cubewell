@@ -54,12 +54,17 @@ class Game {
             onNextBlockChanged: null
         };
         
+        // Debug mode
+        this.debug = true;
+        
         // Bind event handlers
         this._bindEvents();
     }
     
     // Initialize or reset the game
     init() {
+        if (this.debug) console.log("Game.init() - Initializing game");
+        
         // Reset game state
         this.state.score = 0;
         this.state.level = 1;
@@ -79,6 +84,8 @@ class Game {
         // Set up initial blocks
         this.nextBlock = this._getNextBlockFromBag();
         
+        if (this.debug) console.log("Initial next block:", this.nextBlock);
+        
         // Trigger callbacks
         this._triggerCallback('onScoreChanged', this.state.score);
         this._triggerCallback('onLevelChanged', this.state.level);
@@ -86,26 +93,48 @@ class Game {
         
         // Update the renderer
         if (this.renderer) {
+            if (this.debug) console.log("Initializing renderer");
             this.renderer.init(this.pit, this);
+        } else {
+            if (this.debug) console.error("Renderer is not initialized!");
         }
     }
     
     // Start the game
     start() {
+        if (this.debug) console.log("Game.start() - Starting game");
+        
         if (this.state.isGameOver) {
             this.init();
         }
         
+        // Ensure the game is running
         this.state.isRunning = true;
         
-        // Spawn the first block
-        this._spawnBlock();
+        // Spawn the first block if we don't have one
+        if (!this.currentBlock) {
+            this._spawnBlock();
+        }
+        
+        // Make sure the block is visible in the renderer
+        if (this.renderer && this.currentBlock) {
+            this.renderer.setCurrentBlock(this.currentBlock);
+            this.renderer.updatePit(this.pit);
+        }
         
         // Start the fall timer
         this._startFallTimer();
         
         // Start the background music
         AudioManager.startMusic();
+        
+        if (this.debug) {
+            console.log("Game started with state:", {
+                running: this.state.isRunning,
+                block: this.currentBlock ? "present" : "missing",
+                position: this.currentBlock ? this.currentBlock.position : "N/A"
+            });
+        }
     }
     
     // Pause the game
@@ -143,39 +172,59 @@ class Game {
     
     // Handle key input
     handleKeyInput(key) {
-        if (!this.state.isRunning || !this.currentBlock) return;
+        console.log(`Game.handleKeyInput: ${key}, isRunning: ${this.state.isRunning}, hasBlock: ${Boolean(this.currentBlock)}`);
+        
+        if (!this.state.isRunning) {
+            console.log("Game is not running, ignoring key input");
+            return;
+        }
+        
+        if (!this.currentBlock) {
+            console.log("No current block, ignoring key input");
+            return;
+        }
+        
+        if (this.debug) console.log(`Key press: ${key}`);
         
         switch (key) {
-            // Movement
+            // Movement - Corrected for top-down orientation
             case 'ArrowLeft':
+                console.log("Moving left");
                 this.moveBlock(-1, 0, 0);
                 break;
             case 'ArrowRight':
+                console.log("Moving right");
                 this.moveBlock(1, 0, 0);
                 break;
             case 'ArrowUp':
-                this.moveBlock(0, -1, 0);
+                console.log("Moving forward (away from viewer)");
+                this.moveBlock(0, 1, 0);  // Positive Y is away from viewer in top-down view
                 break;
             case 'ArrowDown':
-                this.moveBlock(0, 1, 0);
+                console.log("Moving backward (toward viewer)");
+                this.moveBlock(0, -1, 0);  // Negative Y is toward viewer in top-down view
                 break;
                 
             // Rotation
             case 'q':
             case 'Q':
+                console.log("Rotating X");
                 this.rotateBlock('x', Math.PI/2);
                 break;
             case 'w':
             case 'W':
+                console.log("Rotating Y");
                 this.rotateBlock('y', Math.PI/2);
                 break;
             case 'e':
             case 'E':
-                this.rotateBlock('z', Math.PI/2);
+                console.log("Rotating Z (reversed direction)");
+                this.rotateBlock('z', -Math.PI/2);  // Reversed direction
                 break;
                 
             // Drop
             case ' ':
+                console.log("Dropping block");
                 this.dropBlock();
                 break;
         }
@@ -193,12 +242,16 @@ class Game {
         // Move the block
         this.currentBlock.move(dx, dy, dz);
         
+        if (this.debug) console.log(`Moving block to: ${this.currentBlock.position.x}, ${this.currentBlock.position.y}, ${this.currentBlock.position.z}`);
+        
         // Check if the new position is valid
         if (!this.pit.canPlacePolycube(this.currentBlock)) {
             // Revert to the original position
             this.currentBlock.position.x = originalX;
             this.currentBlock.position.y = originalY;
             this.currentBlock.position.z = originalZ;
+            
+            if (this.debug) console.log(`Invalid move, reverting to: ${originalX}, ${originalY}, ${originalZ}`);
             return false;
         }
         
@@ -224,8 +277,17 @@ class Game {
             z: this.currentBlock.rotation.z
         };
         
+        // For debugging, log the pre-rotation state
+        if (this.debug) {
+            console.log(`Pre-rotation: axis=${axis}, angle=${angle}, position:`, 
+                JSON.stringify(this.currentBlock.position), 
+                "rotation:", JSON.stringify(this.currentBlock.rotation));
+        }
+        
         // Rotate the block
         this.currentBlock.rotate(axis, angle);
+        
+        if (this.debug) console.log(`Rotating block on ${axis} axis by ${angle}`);
         
         // Check if the new rotation is valid
         if (!this.pit.canPlacePolycube(this.currentBlock)) {
@@ -233,6 +295,57 @@ class Game {
             this.currentBlock.rotation.x = originalRotation.x;
             this.currentBlock.rotation.y = originalRotation.y;
             this.currentBlock.rotation.z = originalRotation.z;
+            
+            if (this.debug) console.log(`Invalid rotation, reverting`);
+            
+            // Try a slight position adjustment if it's the Z-axis (E key) and negative rotation
+            if (axis === 'z' && angle < 0) {
+                // Save current position
+                const origPos = {...this.currentBlock.position};
+                
+                // Try adjusting the position slightly then rotate
+                const adjustments = [
+                    {x: 0, y: 0, z: 1},   // Try moving up one space
+                    {x: -1, y: 0, z: 0},   // Try moving left
+                    {x: 1, y: 0, z: 0},    // Try moving right
+                    {x: 0, y: 1, z: 0},    // Try moving forward
+                    {x: 0, y: -1, z: 0}    // Try moving backward
+                ];
+                
+                for (const adj of adjustments) {
+                    // Move to adjusted position
+                    this.currentBlock.position.x += adj.x;
+                    this.currentBlock.position.y += adj.y;
+                    this.currentBlock.position.z += adj.z;
+                    
+                    // Try rotation again
+                    this.currentBlock.rotate(axis, angle);
+                    
+                    if (this.pit.canPlacePolycube(this.currentBlock)) {
+                        // Success! Keep this position and rotation
+                        if (this.debug) console.log(`Found valid rotation after position adjustment: ${JSON.stringify(adj)}`);
+                        
+                        // Play rotate sound
+                        AudioManager.playRotate();
+                        
+                        // Update in the renderer
+                        if (this.renderer) {
+                            this.renderer.updateCurrentBlock(this.currentBlock);
+                        }
+                        
+                        return true;
+                    }
+                    
+                    // Reset position and rotation for next try
+                    this.currentBlock.position.x = origPos.x;
+                    this.currentBlock.position.y = origPos.y;
+                    this.currentBlock.position.z = origPos.z;
+                    this.currentBlock.rotation.x = originalRotation.x;
+                    this.currentBlock.rotation.y = originalRotation.y;
+                    this.currentBlock.rotation.z = originalRotation.z;
+                }
+            }
+            
             return false;
         }
         
@@ -250,6 +363,8 @@ class Game {
     // Quickly drop the block to the bottom
     dropBlock() {
         if (!this.currentBlock || !this.state.isRunning) return;
+        
+        if (this.debug) console.log(`Dropping block`);
         
         // Play drop sound
         AudioManager.playDrop();
@@ -286,6 +401,8 @@ class Game {
     // Land the current block and handle consequences
     _landBlock() {
         if (!this.currentBlock) return;
+        
+        if (this.debug) console.log(`Landing block at: ${this.currentBlock.position.x}, ${this.currentBlock.position.y}, ${this.currentBlock.position.z}`);
         
         // Play landing sound
         AudioManager.playLand();
@@ -330,24 +447,63 @@ class Game {
     
     // Spawn a new block at the top of the pit
     _spawnBlock() {
+        if (this.debug) console.log("Spawning new block");
+        
+        // Check if we actually have a next block, and if not, create one
+        if (!this.nextBlock) {
+            this.nextBlock = this._getNextBlockFromBag();
+            if (this.debug) console.log("Created new next block:", this.nextBlock);
+        }
+        
         // Set the current block to the next block
         this.currentBlock = this.nextBlock;
         
         // Get a new next block
         this.nextBlock = this._getNextBlockFromBag();
         
+        // Find the highest z-coordinate in the block cubes
+        let maxZ = 0;
+        this.currentBlock.cubes.forEach(cube => {
+            if (cube.z > maxZ) maxZ = cube.z;
+        });
+        
         // Position the block at the top center of the pit
+        // But adjust Z position to ensure the block fits within the pit height
         this.currentBlock.position.x = Math.floor(this.settings.pitWidth / 2) - 1;
         this.currentBlock.position.y = Math.floor(this.settings.pitDepth / 2) - 1;
-        this.currentBlock.position.z = this.settings.pitHeight - 1;
+        
+        // Make sure the highest point of the block is at the top of the pit
+        this.currentBlock.position.z = this.settings.pitHeight - 1 - maxZ;
+        
+        if (this.debug) console.log(`Adjusted spawn position for maxZ=${maxZ}: ${this.currentBlock.position.x}, ${this.currentBlock.position.y}, ${this.currentBlock.position.z}`);
         
         // Reset rotation
         this.currentBlock.rotation.x = 0;
         this.currentBlock.rotation.y = 0;
         this.currentBlock.rotation.z = 0;
         
+        // Important: Update the renderer with the current and next blocks BEFORE any movement
+        if (this.renderer) {
+            console.log("Updating renderer with new blocks");
+            this.renderer.setCurrentBlock(this.currentBlock);
+            this.renderer.updateNextBlockPreview(this.nextBlock);
+        }
+        
+        if (this.debug) {
+            console.log(`New block positioned at: ${this.currentBlock.position.x}, ${this.currentBlock.position.y}, ${this.currentBlock.position.z}`);
+            console.log(`Block type: ${this.currentBlock.name}, cubes: ${this.currentBlock.cubes.length}`);
+            console.log(`Block color index: ${this.currentBlock.colorIndex}`);
+        }
+        
+        // Force the game to be running for testing purposes
+        if (!this.state.isRunning) {
+            this.state.isRunning = true;
+            if (this.debug) console.log("Forcing game to running state");
+        }
+        
         // Check if the new block can be placed (game over check)
         if (!this.pit.canPlacePolycube(this.currentBlock)) {
+            if (this.debug) console.log("Game over - can't place new block");
             this.gameOver();
             return;
         }
@@ -355,10 +511,19 @@ class Game {
         // Trigger callback for next block change
         this._triggerCallback('onNextBlockChanged', this.nextBlock);
         
-        // Update the renderer
+        // Update the renderer with both blocks
         if (this.renderer) {
+            if (this.debug) console.log("Updating renderer with new blocks");
+            
+            // Set both blocks in renderer
             this.renderer.setCurrentBlock(this.currentBlock);
             this.renderer.updateNextBlockPreview(this.nextBlock);
+            
+            // Force an update of both renderer scenes
+            this.renderer.renderer.render(this.renderer.scene, this.renderer.camera);
+            this.renderer.previewRenderer.render(this.renderer.previewScene, this.renderer.previewCamera);
+        } else {
+            if (this.debug) console.error("Renderer not available for new block");
         }
         
         // Start the fall timer
@@ -379,6 +544,7 @@ class Game {
     // Refill the block bag with a shuffled set of all block types
     _refillBlockBag() {
         this.blockBag = PolycubeLibrary.createBag();
+        if (this.debug) console.log(`Refilled block bag with ${this.blockBag.length} blocks`);
     }
     
     // Update the score and check for level up
@@ -410,9 +576,16 @@ class Game {
     
     // Bind event handlers for keyboard input
     _bindEvents() {
-        document.addEventListener('keydown', (event) => {
+        if (this.debug) console.log("Game: Binding keyboard events");
+        
+        // IMPORTANT: We're NOT binding keyboard events here anymore
+        // This is now handled by main.js to prevent duplication
+        
+        // Just set up the bound function for use by main.js
+        this._handleKeyDown = (event) => {
+            if (this.debug) console.log(`Game received key: ${event.key}`);
             this.handleKeyInput(event.key);
-        });
+        };
     }
     
     // Trigger a callback if it exists

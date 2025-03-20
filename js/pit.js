@@ -9,7 +9,7 @@ class Pit {
         this.depth = depth;
         this.height = height;
         this.grid = this._createEmptyGrid();
-        this.mesh = null; // Will hold the Three.js mesh for the pit walls
+        this.debug = true; // Debug mode
     }
     
     // Create an empty 3D grid
@@ -40,12 +40,48 @@ class Pit {
         return this.grid[x][y][z] === null;
     }
     
+    // Check if a position is filled
+    isFilled(x, y, z) {
+        if (!this.isInBounds(x, y, z)) return false;
+        return this.grid[x][y][z] !== null;
+    }
+    
     // Check if a polycube can be placed at its current position
     canPlacePolycube(polycube) {
-        const positions = polycube.getWorldPositions();
+        if (!polycube) return false;
         
-        for (const pos of positions) {
-            if (!this.isEmpty(pos.x, pos.y, pos.z)) {
+        if (this.debug) console.log(`Checking if block can be placed at ${polycube.position.x}, ${polycube.position.y}, ${polycube.position.z}`);
+        if (this.debug) console.log(`Block has ${polycube.cubes.length} cubes`);
+        
+        // Get world positions of all cubes in the polycube
+        const worldPositions = polycube.getWorldPositions();
+        
+        // Check if all positions are valid and empty
+        for (const worldPos of worldPositions) {
+            // Check if position is within pit bounds
+            if (worldPos.x < 0 || worldPos.x >= this.width ||
+                worldPos.y < 0 || worldPos.y >= this.depth ||
+                worldPos.z < 0) {
+                
+                // Allow blocks to extend beyond the top of the pit when spawning
+                if (worldPos.z >= this.height) {
+                    // Only allow this when the block is at the very top of the pit
+                    // This is to help with spawning blocks that might extend beyond the top
+                    if (polycube.position.z < this.height - 1) {
+                        if (this.debug) console.log(`Position ${worldPos.x}, ${worldPos.y}, ${worldPos.z} is out of bounds (z too high and not at spawn position)`);
+                        return false;
+                    }
+                    // Otherwise, allow blocks to spawn with parts outside the top
+                    continue;
+                }
+                
+                if (this.debug) console.log(`Position ${worldPos.x}, ${worldPos.y}, ${worldPos.z} is out of bounds`);
+                return false;
+            }
+            
+            // Check if position is empty (for z positions within the pit)
+            if (worldPos.z < this.height && this.isFilled(worldPos.x, worldPos.y, worldPos.z)) {
+                if (this.debug) console.log(`Position ${worldPos.x}, ${worldPos.y}, ${worldPos.z} is not empty`);
                 return false;
             }
         }
@@ -57,12 +93,19 @@ class Pit {
     placePolycube(polycube) {
         const positions = polycube.getWorldPositions();
         
+        if (this.debug) {
+            console.log(`Placing block with ${positions.length} cubes`);
+        }
+        
         for (const pos of positions) {
             if (this.isInBounds(pos.x, pos.y, pos.z)) {
                 this.grid[pos.x][pos.y][pos.z] = {
-                    color: polycube.color,
-                    mesh: null // Will be set by the renderer
+                    colorIndex: pos.colorIndex
                 };
+                
+                if (this.debug) {
+                    console.log(`Placed cube at ${pos.x}, ${pos.y}, ${pos.z} with colorIndex ${pos.colorIndex}`);
+                }
             }
         }
     }
@@ -81,6 +124,10 @@ class Pit {
     
     // Clear a layer and move everything above down
     clearLayer(z) {
+        if (this.debug) {
+            console.log(`Clearing layer at z=${z}`);
+        }
+        
         // Clear the layer
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.depth; y++) {
@@ -116,6 +163,10 @@ class Pit {
             }
         }
         
+        if (this.debug && layersCleared > 0) {
+            console.log(`Cleared ${layersCleared} layers`);
+        }
+        
         return layersCleared;
     }
     
@@ -136,6 +187,10 @@ class Pit {
             }
         }
         
+        if (this.debug) {
+            console.log(`Found ${filled.length} filled positions`);
+        }
+        
         return filled;
     }
     
@@ -149,6 +204,9 @@ class Pit {
             for (let x = 0; x < this.width; x++) {
                 for (let y = 0; y < this.depth; y++) {
                     if (!this.isEmpty(x, y, z)) {
+                        if (this.debug) {
+                            console.log(`Game over: found block at ${x}, ${y}, ${z}`);
+                        }
                         return true;
                     }
                 }
@@ -160,6 +218,9 @@ class Pit {
     
     // Reset the pit to empty
     reset() {
+        if (this.debug) {
+            console.log(`Resetting pit`);
+        }
         this.grid = this._createEmptyGrid();
     }
 } 

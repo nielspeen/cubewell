@@ -4,11 +4,11 @@
  */
 
 class Polycube {
-    constructor(id, name, cubes, color) {
+    constructor(id, name, cubes, colorIndex) {
         this.id = id;
         this.name = name;
         this.cubes = cubes; // Array of positions relative to pivot: [{x, y, z}, ...]
-        this.color = color;
+        this.colorIndex = colorIndex; // Index into the colors array
         this.mesh = null; // Will hold the Three.js mesh
         this.position = { x: 0, y: 0, z: 0 }; // Current position in the pit
         this.rotation = { x: 0, y: 0, z: 0 }; // Current rotation
@@ -17,35 +17,32 @@ class Polycube {
     // Clone this polycube to create a new instance
     clone() {
         const newCubes = this.cubes.map(cube => ({ x: cube.x, y: cube.y, z: cube.z }));
-        return new Polycube(this.id, this.name, newCubes, this.color);
+        return new Polycube(this.id, this.name, newCubes, this.colorIndex);
     }
 
     // Get the world positions of all cubes in this polycube
     getWorldPositions() {
         // Apply rotation and translation to each cube
         return this.cubes.map(cube => {
-            // In a real implementation, apply rotation matrices
-            // This is a simplified placeholder
+            // Apply rotation matrices
             const rotated = this._applyRotation(cube);
             return {
                 x: Math.round(rotated.x + this.position.x),
                 y: Math.round(rotated.y + this.position.y),
-                z: Math.round(rotated.z + this.position.z)
+                z: Math.round(rotated.z + this.position.z),
+                colorIndex: this.colorIndex
             };
         });
     }
 
     // Apply current rotation to a cube position
     _applyRotation(cube) {
-        // In a full implementation, use proper 3D rotation matrices
-        // For simplicity, we'll use a placeholder
-        // Note: This is not mathematically correct and should be replaced with quaternion or matrix-based rotation
+        // Use proper 3D rotation matrices
         let x = cube.x;
         let y = cube.y;
         let z = cube.z;
         
         // Apply rotations in X, Y, Z order
-        // (Real implementation would use matrices or quaternions)
         const cosX = Math.cos(this.rotation.x);
         const sinX = Math.sin(this.rotation.x);
         const cosY = Math.cos(this.rotation.y);
@@ -72,6 +69,22 @@ class Polycube {
         y = tempY;
         
         return { x, y, z };
+    }
+
+    // Get the rotation as a THREE.Matrix4 for Three.js
+    getRotationMatrix() {
+        // Create a new rotation matrix
+        const matrix = new THREE.Matrix4();
+        
+        // Create individual rotation matrices
+        const rotX = new THREE.Matrix4().makeRotationX(this.rotation.x);
+        const rotY = new THREE.Matrix4().makeRotationY(this.rotation.y);
+        const rotZ = new THREE.Matrix4().makeRotationZ(this.rotation.z);
+        
+        // Combine rotations (in X, Y, Z order)
+        matrix.multiply(rotZ).multiply(rotY).multiply(rotX);
+        
+        return matrix;
     }
 
     // Move the polycube
@@ -104,7 +117,7 @@ const PolycubeLibrary = {
                 { x: 2, y: 0, z: 0 },
                 { x: 3, y: 0, z: 0 }
             ],
-            0x00AAFF
+            0 // colorIndex
         ));
         
         // L-Shape
@@ -117,7 +130,7 @@ const PolycubeLibrary = {
                 { x: 2, y: 0, z: 0 },
                 { x: 0, y: 1, z: 0 }
             ],
-            0xFFAA00
+            1 // colorIndex
         ));
         
         // T-Shape
@@ -130,7 +143,7 @@ const PolycubeLibrary = {
                 { x: 2, y: 0, z: 0 },
                 { x: 1, y: 1, z: 0 }
             ],
-            0xAA00FF
+            2 // colorIndex
         ));
         
         // Cube (2x2x1)
@@ -143,7 +156,7 @@ const PolycubeLibrary = {
                 { x: 0, y: 1, z: 0 },
                 { x: 1, y: 1, z: 0 }
             ],
-            0xFFFF00
+            3 // colorIndex
         ));
         
         // Cube (2x2x2)
@@ -160,7 +173,7 @@ const PolycubeLibrary = {
                 { x: 0, y: 1, z: 1 },
                 { x: 1, y: 1, z: 1 }
             ],
-            0xFF0000
+            4 // colorIndex
         ));
         
         // Z-Shape
@@ -173,7 +186,7 @@ const PolycubeLibrary = {
                 { x: 1, y: 1, z: 0 },
                 { x: 2, y: 1, z: 0 }
             ],
-            0x00FF00
+            5 // colorIndex
         ));
         
         // 3D L-Shape
@@ -186,7 +199,7 @@ const PolycubeLibrary = {
                 { x: 2, y: 0, z: 0 },
                 { x: 2, y: 0, z: 1 }
             ],
-            0x8800FF
+            6 // colorIndex
         ));
     },
     

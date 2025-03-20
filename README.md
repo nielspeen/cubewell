@@ -387,4 +387,12 @@ Spawn a new block.
 Repeat until game over.
 
 
+Additional rules to comply with the 2025 Vibe Coding Game Jam that we are joining:
+
+- anyone can enter with their game
+- at least 80% code has to be written by AI 
+- game has to be accessible on web without any login or signup and free-to-play (preferrably its own domain or subdomain)
+- game has to be multiplayer by default
+- can use any engine but usually ThreeJS is recommended
+- NO loading screens and heavy downloads (!!!) has to be almost instantly in the game (except maybe ask username if you want)
 

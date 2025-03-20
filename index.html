@@ -7,44 +7,36 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="game-container">
-        <div id="canvas-container"></div>
-        
-        <div id="ui-container">
+    <div id="game-screen" class="screen">
+        <div id="game-container">
+            <div id="status-overlay" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; font-family: monospace; z-index: 100;">
+                <div>Game Running: <span id="game-running-status">?</span></div>
+                <div>Block Position: <span id="block-position">?</span></div>
+                <div>Last Key: <span id="last-key-pressed">None</span></div>
+            </div>
+            <div id="canvas-container"></div>
             <div id="game-info">
-                <div id="score-display">Score: <span id="score">0</span></div>
-                <div id="level-display">Level: <span id="level">1</span></div>
-            </div>
-            
-            <div id="next-block-preview">
-                <h3>Next Block</h3>
-                <div id="preview-container"></div>
-            </div>
-            
-            <div id="mobile-controls">
-                <div id="movement-controls">
-                    <button id="move-left">←</button>
-                    <button id="move-right">→</button>
-                    <button id="move-forward">↑</button>
-                    <button id="move-backward">↓</button>
+                <div id="score-container">
+                    <span>Score: </span><span id="score">0</span>
                 </div>
-                
-                <div id="rotation-controls">
-                    <button id="rotate-x">X</button>
-                    <button id="rotate-y">Y</button>
-                    <button id="rotate-z">Z</button>
+                <div id="level-container">
+                    <span>Level: </span><span id="level">1</span>
                 </div>
-                
-                <button id="drop-button">DROP</button>
+                <div id="next-block">
+                    <div id="next-block-label">Next:</div>
+                    <div id="preview-container"></div>
+                </div>
             </div>
         </div>
     </div>
     
     <div id="menu-screen" class="screen">
         <h1>CubeWell</h1>
-        <button id="start-game">Start Game</button>
-        <button id="high-scores-btn">High Scores</button>
-        <button id="settings-btn">Settings</button>
+        <div class="menu-options">
+            <button id="start-game" class="btn-primary" style="font-size: 24px; padding: 15px 30px; margin-bottom: 20px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">START GAME</button>
+            <button id="show-controls" class="btn">Controls</button>
+            <button id="show-high-scores" class="btn">High Scores</button>
+        </div>
     </div>
     
     <div id="game-over-screen" class="screen hidden">
@@ -88,6 +80,7 @@
     <script src="js/audio.js"></script>
     <script src="js/polycubes.js"></script>
     <script src="js/pit.js"></script>
+    <script src="js/renderer.js"></script>
     <script src="js/game.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/main.js"></script>
