@@ -76,16 +76,35 @@ const AudioManager = {
     
     // Define sound files (without loading)
     defineAudioFiles: function() {
-        // Define sound files
+        // Store root path for more reliable loading
+        const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+        
+        // Define sound files with fallbacks
         this.soundFiles = {
-            rotate: 'sounds/rotate.mp3',
-            move: 'sounds/move.mp3',
-            land: 'sounds/place.mp3',
-            clear: 'sounds/line.mp3',
-            levelup: 'sounds/level_up.mp3',
-            gameover: 'sounds/game_over.mp3',
-            spawn: 'sounds/move.mp3', // Reuse move sound for spawn
-            drop: 'sounds/place.mp3'  // Reuse place sound for drop
+            rotate: {
+                paths: ['sounds/rotate.mp3', basePath + 'sounds/rotate.mp3']
+            },
+            move: {
+                paths: ['sounds/move.mp3', basePath + 'sounds/move.mp3']
+            },
+            land: {
+                paths: ['sounds/place.mp3', basePath + 'sounds/place.mp3']
+            },
+            clear: {
+                paths: ['sounds/line.mp3', basePath + 'sounds/line.mp3']
+            },
+            levelup: {
+                paths: ['sounds/level_up.mp3', basePath + 'sounds/level_up.mp3']
+            },
+            gameover: {
+                paths: ['sounds/game_over.mp3', basePath + 'sounds/game_over.mp3']
+            },
+            spawn: {
+                paths: ['sounds/move.mp3', basePath + 'sounds/move.mp3']  // Reuse move sound for spawn
+            },
+            drop: {
+                paths: ['sounds/place.mp3', basePath + 'sounds/place.mp3'] // Reuse place sound for drop
+            }
         };
     },
     
@@ -97,47 +116,68 @@ const AudioManager = {
         }
         
         // Load each sound
-        for (const [name, path] of Object.entries(this.soundFiles)) {
-            this.loadSound(name, path);
+        for (const [name, sound] of Object.entries(this.soundFiles)) {
+            this.loadSound(name, sound.paths);
         }
         
-        // Load music
-        this.loadMusic('sounds/music.mp3');
+        // Load music - provide fallback paths
+        const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+        this.loadMusic(['sounds/music.mp3', basePath + 'sounds/music.mp3']);
     },
     
-    // Load a sound
-    loadSound: function(name, path) {
+    // Load a sound with multiple fallback paths
+    loadSound: function(name, paths) {
         if (!this.context) {
             console.warn(`Cannot load sound ${name} - AudioContext not initialized`);
             return;
         }
         
-        console.log(`Attempting to load sound: ${name} from ${path}`);
-        fetch(path)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                console.log(`Sound ${name}: Fetch successful`);
-                return response.arrayBuffer();
-            })
-            .then(buffer => {
-                console.log(`Sound ${name}: Starting audio decoding`);
-                return this.context.decodeAudioData(buffer).catch(error => {
-                    // Specific handling for decoding errors
-                    console.warn(`Error decoding audio data for ${name}:`, error);
-                    throw error;
-                });
-            })
-            .then(decodedData => {
-                this.sounds[name] = decodedData;
-                console.log(`Sound ${name}: Successfully loaded and decoded`);
-            })
-            .catch(error => {
-                console.warn(`Error loading sound ${name}:`, error);
-                // Create a silent buffer as a fallback
+        if (!paths || !Array.isArray(paths) || paths.length === 0) {
+            console.warn(`No valid paths provided for sound ${name}`);
+            this._createSilentBuffer(name);
+            return;
+        }
+        
+        console.log(`Attempting to load sound: ${name} from ${paths[0]}`);
+        
+        // Try each path in sequence
+        const tryNextPath = (index) => {
+            if (index >= paths.length) {
+                console.warn(`All paths failed for sound ${name}`);
                 this._createSilentBuffer(name);
-            });
+                return;
+            }
+            
+            const path = paths[index];
+            fetch(path)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    console.log(`Sound ${name}: Fetch successful from ${path}`);
+                    return response.arrayBuffer();
+                })
+                .then(buffer => {
+                    console.log(`Sound ${name}: Starting audio decoding`);
+                    return this.context.decodeAudioData(buffer)
+                        .catch(error => {
+                            console.warn(`Error decoding audio data for ${name} from ${path}:`, error);
+                            throw error;
+                        });
+                })
+                .then(decodedData => {
+                    this.sounds[name] = decodedData;
+                    console.log(`Sound ${name}: Successfully loaded and decoded`);
+                })
+                .catch(error => {
+                    console.warn(`Error loading sound ${name} from ${path}:`, error);
+                    // Try next path
+                    tryNextPath(index + 1);
+                });
+        };
+        
+        // Start with the first path
+        tryNextPath(0);
     },
     
     // Create a silent buffer as fallback
@@ -155,37 +195,57 @@ const AudioManager = {
         }
     },
     
-    // Load background music
-    loadMusic: function(path) {
+    // Load background music with multiple fallback paths
+    loadMusic: function(paths) {
         if (!this.context) {
             console.warn("Cannot load music - AudioContext not initialized");
             return;
         }
         
-        fetch(path)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.arrayBuffer();
-            })
-            .then(buffer => {
-                return this.context.decodeAudioData(buffer).catch(error => {
-                    console.warn("Error decoding music data:", error);
-                    throw error;
+        if (!paths || !Array.isArray(paths) || paths.length === 0) {
+            console.warn("No valid paths provided for music");
+            return;
+        }
+        
+        // Try each path in sequence
+        const tryNextPath = (index) => {
+            if (index >= paths.length) {
+                console.warn("All paths failed for music");
+                return;
+            }
+            
+            const path = paths[index];
+            fetch(path)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    console.log(`Music: Fetch successful from ${path}`);
+                    return response.arrayBuffer();
+                })
+                .then(buffer => {
+                    return this.context.decodeAudioData(buffer)
+                        .catch(error => {
+                            console.warn(`Error decoding music data from ${path}:`, error);
+                            throw error;
+                        });
+                })
+                .then(decodedData => {
+                    this.music = decodedData;
+                    console.log('Music loaded successfully');
+                    
+                    // Play music once loaded
+                    this.playMusic();
+                })
+                .catch(error => {
+                    console.warn(`Error loading music from ${path}:`, error);
+                    // Try next path
+                    tryNextPath(index + 1);
                 });
-            })
-            .then(decodedData => {
-                this.music = decodedData;
-                console.log('Music loaded successfully');
-                
-                // Play music once loaded
-                this.playMusic();
-            })
-            .catch(error => {
-                console.warn('Error loading music:', error);
-                // Don't create fallback for music - just skip it
-            });
+        };
+        
+        // Start with the first path
+        tryNextPath(0);
     },
     
     // Play a sound effect

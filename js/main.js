@@ -124,7 +124,12 @@ document.addEventListener('DOMContentLoaded', function() {
             moveCurrentBlock: function() { return false; },
             rotateCurrentBlock: function() { return false; },
             dropCurrentBlock: function() { return false; },
-            unpause: function() { console.log("Cannot unpause - game not initialized"); }
+            unpause: function() { console.log("Cannot unpause - game not initialized"); },
+            pause: function() { console.log("Cannot pause - game not initialized"); },
+            reset: function() { console.log("Cannot reset - game not initialized"); },
+            start: function() { console.log("Cannot start - game not initialized"); },
+            getScore: function() { return this.state.score; },
+            getLevel: function() { return this.state.level; }
         };
     }
     
@@ -207,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
             keyState.handlingKeyDown = true;
             
             // Special case for space to unpause/start the game
-            if (event.key === ' ' && game && game.isPaused()) {
+            if (event.key === ' ' && game && (game.isPaused ? game.isPaused() : game.state && game.state.isPaused)) {
                 console.log("SPACE pressed - starting game from paused state");
                 
                 // Update status display to show game is starting
@@ -227,8 +232,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     startMessage.style.display = 'none';
                 }
                 
-                // Unpause the game
-                game.unpause();
+                // Unpause the game - try resume() first, then unpause()
+                if (typeof game.resume === 'function') {
+                    game.resume();
+                } else if (typeof game.unpause === 'function') {
+                    game.unpause();
+                }
+                
                 event.preventDefault();
                 keyState.handlingKeyDown = false;
                 return;

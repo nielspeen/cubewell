@@ -60,19 +60,103 @@
 
     <!-- Polyfill for crypto.randomUUID -->
     <script>
-    if (!crypto.randomUUID) {
-        crypto.randomUUID = function() {
-            // Simple UUID v4 implementation
-            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-            );
+    // Ensure crypto object exists on window
+    if (!window.crypto) {
+        window.crypto = {};
+    }
+
+    // Add randomUUID function if not present
+    if (!window.crypto.randomUUID) {
+        console.log("Adding polyfill for crypto.randomUUID");
+        window.crypto.randomUUID = function() {
+            // Fallback implementation for browsers that don't support randomUUID
+            // This creates a UUID v4 compatible string
+            
+            // Use crypto.getRandomValues if available, otherwise Math.random
+            let getRandomValues;
+            if (window.crypto.getRandomValues) {
+                getRandomValues = function(array) {
+                    return window.crypto.getRandomValues(array);
+                };
+            } else {
+                console.warn("crypto.getRandomValues not available, using Math.random fallback");
+                getRandomValues = function(array) {
+                    for (let i = 0; i < array.length; i++) {
+                        array[i] = Math.floor(Math.random() * 256);
+                    }
+                    return array;
+                };
+            }
+
+            // Generate a random UUID v4
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = getRandomValues(new Uint8Array(1))[0] % 16;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
         };
-        console.log("Added polyfill for crypto.randomUUID");
+        
+        // For backward compatibility, also attach to crypto directly if it exists
+        if (typeof crypto !== 'undefined' && crypto !== window.crypto) {
+            crypto.randomUUID = window.crypto.randomUUID;
+        }
     }
     </script>
 
     <!-- Load game scripts -->
     <script type="module" src="js/main.js"></script>
+
+    <!-- Diagnostic script to check for issues -->
+    <script>
+    // Wait a short time for initialization to complete
+    setTimeout(function() {
+        console.log("Running diagnostic check...");
+        
+        // Check if game was properly initialized
+        if (!window.game || (typeof window.game.isRunning !== 'function')) {
+            console.warn("Game failed to initialize properly");
+            
+            // Check the status display
+            const statusEl = document.getElementById('game-running-status');
+            if (statusEl) {
+                statusEl.textContent = "ERROR - Reinitializing...";
+                statusEl.style.color = "orange";
+            }
+            
+            // Try to (re)initialize the game manually
+            if (typeof window.initGame === 'function') {
+                console.log("Attempting to reinitialize game...");
+                window.initGame();
+            } else {
+                console.error("initGame function not available");
+                
+                // Update status to show error
+                if (statusEl) {
+                    statusEl.textContent = "ERROR - Refresh Page";
+                    statusEl.style.color = "red";
+                }
+            }
+        } else {
+            console.log("Game initialized successfully", {
+                running: window.game.isRunning(),
+                paused: window.game.isPaused(),
+                block: window.game.currentBlock ? "present" : "missing"
+            });
+            
+            // Check if audio initialized
+            if (window.AudioManager) {
+                // Print audio status
+                if (typeof window.AudioManager.debugStatus === 'function') {
+                    console.log("Audio system status:", window.AudioManager.debugStatus());
+                } else {
+                    console.log("Audio system exists but status unknown");
+                }
+            } else {
+                console.warn("Audio system not available globally");
+            }
+        }
+    }, 2000);
+    </script>
 
     <style>
     /* Prominent start message styling */

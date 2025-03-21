@@ -351,8 +351,19 @@ const UI = {
     _togglePause() {
         if (!this.game) return;
         
-        if (this.game.state.isRunning) {
-            this.game.pause();
+        // Check if game is running or paused
+        const isRunning = typeof this.game.isRunning === 'function' ? 
+            this.game.isRunning() : this.game.state && this.game.state.isRunning;
+            
+        const isPaused = typeof this.game.isPaused === 'function' ? 
+            this.game.isPaused() : this.game.state && this.game.state.isPaused;
+        
+        if (isRunning && !isPaused) {
+            // Pause the game
+            if (typeof this.game.pause === 'function') {
+                this.game.pause();
+            }
+            
             if (this.elements.gameStateDisplay) {
                 this.elements.gameStateDisplay.textContent = "Paused";
             }
@@ -370,8 +381,14 @@ const UI = {
                 startMessage.style.display = 'block';
             }
             
-        } else if (this.game.state.isPaused) {
-            this.game.resume();
+        } else if (isPaused) {
+            // Resume the game - try resume() first, then unpause() if resume doesn't exist
+            if (typeof this.game.resume === 'function') {
+                this.game.resume();
+            } else if (typeof this.game.unpause === 'function') {
+                this.game.unpause();
+            }
+            
             if (this.elements.gameStateDisplay) {
                 this.elements.gameStateDisplay.textContent = "Running";
             }

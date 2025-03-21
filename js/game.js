@@ -216,6 +216,11 @@ class Game {
     isRunning() { return this.state.isRunning; }
     isPaused() { return this.state.isPaused; }
     isGameOver() { return this.state.isGameOver; }
+    
+    // Backward compatibility aliases
+    resume() { return this.unpause(); }
+    getScore() { return this.state.score; }
+    getLevel() { return this.state.level; }
 
     // Set the renderer reference
     setRenderer(renderer) {
