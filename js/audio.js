@@ -17,6 +17,37 @@ const AudioManager = {
     // Initialize the audio system
     init: function() {
         try {
+            // We'll set up basic structures but delay creating AudioContext until user interaction
+            console.log("Audio system preparing for initialization");
+            this.sounds = {};
+            this.initialized = false;
+            
+            // Set up a flag to track if we need to initialize on user interaction
+            this.needsInit = true;
+            
+            // Pre-load sound definitions (but don't load actual audio files yet)
+            this.defineAudioFiles();
+            
+            // Add a one-time listener for user interaction
+            document.addEventListener('click', this._initOnUserInteraction.bind(this), { once: true });
+            document.addEventListener('keydown', this._initOnUserInteraction.bind(this), { once: true });
+            
+            console.log("Audio system will initialize on first user interaction");
+            return true;
+        } catch (e) {
+            console.warn("Failed to prepare audio system:", e);
+            return false;
+        }
+    },
+    
+    // Initialize audio system after user interaction
+    _initOnUserInteraction: function() {
+        if (!this.needsInit) return;
+        this.needsInit = false;
+        
+        try {
+            console.log("User interaction detected, initializing audio now");
+            
             // Create audio context
             this.context = new (window.AudioContext || window.webkitAudioContext)();
             
@@ -32,21 +63,21 @@ const AudioManager = {
             this.setMusicVolume(0.5);
             this.setSfxVolume(0.7);
             
-            // Load sounds
+            // Now that context is created after user interaction, load sounds
             this.loadSounds();
             
             this.initialized = true;
-            console.log("Audio system initialized");
+            console.log("Audio system fully initialized after user interaction");
         } catch (e) {
-            console.warn("Failed to initialize audio:", e);
+            console.warn("Failed to initialize audio after user interaction:", e);
             this.initialized = false;
         }
     },
     
-    // Load all sounds
-    loadSounds: function() {
+    // Define sound files (without loading)
+    defineAudioFiles: function() {
         // Define sound files
-        const soundFiles = {
+        this.soundFiles = {
             rotate: 'sounds/rotate.mp3',
             move: 'sounds/move.mp3',
             land: 'sounds/place.mp3',
@@ -56,9 +87,17 @@ const AudioManager = {
             spawn: 'sounds/move.mp3', // Reuse move sound for spawn
             drop: 'sounds/place.mp3'  // Reuse place sound for drop
         };
+    },
+    
+    // Load all sounds
+    loadSounds: function() {
+        if (!this.context) {
+            console.warn("Cannot load sounds - AudioContext not initialized");
+            return;
+        }
         
         // Load each sound
-        for (const [name, path] of Object.entries(soundFiles)) {
+        for (const [name, path] of Object.entries(this.soundFiles)) {
             this.loadSound(name, path);
         }
         
@@ -68,6 +107,11 @@ const AudioManager = {
     
     // Load a sound
     loadSound: function(name, path) {
+        if (!this.context) {
+            console.warn(`Cannot load sound ${name} - AudioContext not initialized`);
+            return;
+        }
+        
         console.log(`Attempting to load sound: ${name} from ${path}`);
         fetch(path)
             .then(response => {
@@ -79,7 +123,11 @@ const AudioManager = {
             })
             .then(buffer => {
                 console.log(`Sound ${name}: Starting audio decoding`);
-                return this.context.decodeAudioData(buffer);
+                return this.context.decodeAudioData(buffer).catch(error => {
+                    // Specific handling for decoding errors
+                    console.warn(`Error decoding audio data for ${name}:`, error);
+                    throw error;
+                });
             })
             .then(decodedData => {
                 this.sounds[name] = decodedData;
@@ -87,30 +135,75 @@ const AudioManager = {
             })
             .catch(error => {
                 console.warn(`Error loading sound ${name}:`, error);
+                // Create a silent buffer as a fallback
+                this._createSilentBuffer(name);
             });
+    },
+    
+    // Create a silent buffer as fallback
+    _createSilentBuffer: function(name) {
+        try {
+            // Create a short, silent audio buffer
+            const sampleRate = this.context.sampleRate;
+            const buffer = this.context.createBuffer(2, sampleRate * 0.5, sampleRate);
+            
+            // Store it in our sounds collection
+            this.sounds[name] = buffer;
+            console.log(`Created silent fallback for ${name}`);
+        } catch (e) {
+            console.error(`Failed to create fallback for ${name}:`, e);
+        }
     },
     
     // Load background music
     loadMusic: function(path) {
+        if (!this.context) {
+            console.warn("Cannot load music - AudioContext not initialized");
+            return;
+        }
+        
         fetch(path)
-            .then(response => response.arrayBuffer())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.arrayBuffer();
+            })
             .then(buffer => {
-                this.context.decodeAudioData(buffer, decodedData => {
-                    this.music = decodedData;
-                    console.log('Music loaded');
-                    
-                    // Play music once loaded
-                    this.playMusic();
+                return this.context.decodeAudioData(buffer).catch(error => {
+                    console.warn("Error decoding music data:", error);
+                    throw error;
                 });
+            })
+            .then(decodedData => {
+                this.music = decodedData;
+                console.log('Music loaded successfully');
+                
+                // Play music once loaded
+                this.playMusic();
             })
             .catch(error => {
                 console.warn('Error loading music:', error);
+                // Don't create fallback for music - just skip it
             });
     },
     
     // Play a sound effect
     playSFX: function(name) {
-        if (!this.initialized || !this.sounds[name]) {
+        if (!this.initialized || !this.context) {
+            // Try to initialize if needed - first interaction might be a keypress
+            if (this.needsInit) {
+                this._initOnUserInteraction();
+            }
+            
+            // Still not initialized? Skip the sound
+            if (!this.initialized || !this.context) {
+                return;
+            }
+        }
+        
+        if (!this.sounds[name]) {
+            console.warn(`Sound '${name}' not found`);
             return;
         }
         
@@ -129,7 +222,6 @@ const AudioManager = {
             
             // Play the sound
             source.start(0);
-            console.log(`Playing sound: ${name}`);
         } catch (e) {
             console.warn(`Error playing sound ${name}:`, e);
         }
@@ -137,7 +229,14 @@ const AudioManager = {
     
     // Play background music
     playMusic: function() {
-        if (!this.initialized || !this.music) {
+        if (!this.initialized || !this.music || !this.context) {
+            // If we're trying to play music before initialization, remember to do it later
+            this.shouldPlayMusicOnInit = true;
+            return;
+        }
+        
+        if (this.musicPlaying) {
+            // Already playing
             return;
         }
         
@@ -160,6 +259,7 @@ const AudioManager = {
             // Play the music
             source.start(0);
             this.musicPlaying = true;
+            this.musicSource = source; // Store reference so we can stop it
             console.log('Playing music');
         } catch (e) {
             console.warn('Error playing music:', e);
@@ -168,20 +268,19 @@ const AudioManager = {
     
     // Stop music
     stopMusic: function() {
-        if (!this.initialized) {
+        if (!this.initialized || !this.musicPlaying || !this.musicSource) {
             return;
         }
         
-        // Set gain to 0 to effectively stop all music
-        this.musicGainNode.gain.value = 0;
-        
-        // After a brief pause, restore the volume but keep music stopped
-        setTimeout(() => {
-            this.musicGainNode.gain.value = 0.5;
+        try {
+            // Stop the current music source
+            this.musicSource.stop();
             this.musicPlaying = false;
-        }, 100);
-        
-        console.log('Stopping music');
+            this.musicSource = null;
+            console.log('Stopping music');
+        } catch (e) {
+            console.warn('Error stopping music:', e);
+        }
     },
     
     // Resume music if it was playing before
@@ -196,6 +295,10 @@ const AudioManager = {
     // Toggle music on/off
     toggleMusic: function() {
         if (!this.initialized) {
+            // Try to initialize if first interaction is music toggle
+            if (this.needsInit) {
+                this._initOnUserInteraction();
+            }
             return;
         }
         
@@ -208,7 +311,7 @@ const AudioManager = {
     
     // Set music volume (0-1)
     setMusicVolume: function(volume) {
-        if (!this.initialized) {
+        if (!this.initialized || !this.musicGainNode) {
             return;
         }
         
@@ -217,7 +320,7 @@ const AudioManager = {
     
     // Set SFX volume (0-1)
     setSfxVolume: function(volume) {
-        if (!this.initialized) {
+        if (!this.initialized || !this.sfxGainNode) {
             return;
         }
         
@@ -244,47 +347,23 @@ const AudioManager = {
         };
     },
     
-    // Compatibility methods for older code
-    
-    // Start music (alias for playMusic)
-    startMusic: function() {
-        console.log("startMusic called (compatibility method)");
-        this.playMusic();
-    },
-    
-    // Play movement sound
+    // Legacy compatibility methods
     playMove: function() {
-        console.log("playMove called (compatibility method)");
         this.playSFX('move');
     },
-    
-    // Play rotation sound
     playRotate: function() {
-        console.log("playRotate called (compatibility method)");
         this.playSFX('rotate');
     },
-    
-    // Play drop sound
     playDrop: function() {
-        console.log("playDrop called (compatibility method)");
         this.playSFX('drop');
     },
-    
-    // Play block landing sound
     playLand: function() {
-        console.log("playLand called (compatibility method)");
         this.playSFX('land');
     },
-    
-    // Play clear line sound
     playClear: function() {
-        console.log("playClear called (compatibility method)");
         this.playSFX('clear');
     },
-    
-    // Play game over sound
     playGameOver: function() {
-        console.log("playGameOver called (compatibility method)");
         this.playSFX('gameover');
     }
 };

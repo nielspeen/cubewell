@@ -292,6 +292,63 @@ class Pit {
         // All positions are valid
         return true;
     }
+
+    /**
+     * Check if a position is occupied by a block
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @param {number} z - Z coordinate
+     * @returns {boolean} True if position is occupied, false otherwise
+     */
+    isOccupied(x, y, z) {
+        return this.isFilled(x, y, z);
+    }
+
+    /**
+     * Add a cube to the pit at specified coordinates
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @param {number} z - Z coordinate
+     * @param {number} colorIndex - Color index for the cube
+     */
+    addCube(x, y, z, colorIndex = 0) {
+        if (this.isInBounds(x, y, z)) {
+            this.grid[x][y][z] = { colorIndex };
+            if (this.debug) {
+                console.log(`Added cube at ${x}, ${y}, ${z} with colorIndex ${colorIndex}`);
+            }
+        }
+    }
+
+    /**
+     * Check completed layers in the pit
+     * @returns {Array<number>} Array of Y-indices of completed layers
+     */
+    checkCompletedLayers() {
+        const completedLayers = [];
+        
+        for (let z = 0; z < this.height; z++) {
+            if (this.isLayerFilled(z)) {
+                completedLayers.push(z);
+            }
+        }
+        
+        return completedLayers;
+    }
+
+    /**
+     * Remove completed layers and drop blocks above them
+     * @param {Array<number>} layers - Array of Y-indices of layers to remove
+     */
+    removeLayers(layers) {
+        // Sort layers in descending order (top to bottom)
+        layers.sort((a, b) => b - a);
+        
+        // Process each layer
+        for (const z of layers) {
+            this.clearLayer(z);
+        }
+    }
 }
 
 export default Pit; 

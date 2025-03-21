@@ -634,8 +634,48 @@ class Game {
             colorIndex: blockData.id % 7 // 7 different colors
         };
         
-        // Create cubes at each position in the polycube
-        polycube.positions.forEach(pos => {
+        // Check if polycube has valid data
+        if (!polycube) {
+            console.error("Invalid polycube data: null or undefined");
+            // Create a fallback single cube as a placeholder
+            const cube = new THREE.Object3D();
+            cube.position.set(0, 0, 0);
+            block.add(cube);
+            return block;
+        }
+        
+        // Handle different data formats - polycube may have either positions or cubes property
+        let cubePositions = [];
+        
+        if (polycube.positions && Array.isArray(polycube.positions)) {
+            cubePositions = polycube.positions;
+        } else if (polycube.cubes && Array.isArray(polycube.cubes)) {
+            // Convert cubes to positions
+            cubePositions = polycube.cubes.map(cube => {
+                // Handle different cube formats
+                if (typeof cube === 'object') {
+                    if (cube.position) {
+                        return cube.position;
+                    } else if (cube.x !== undefined && cube.y !== undefined && cube.z !== undefined) {
+                        return { x: cube.x, y: cube.y, z: cube.z };
+                    }
+                }
+                
+                // Default fallback for invalid data
+                console.warn("Invalid cube format in polycube:", cube);
+                return { x: 0, y: 0, z: 0 };
+            });
+        } else {
+            console.error("Invalid polycube data:", polycube);
+            // Create a fallback single cube as a placeholder
+            const cube = new THREE.Object3D();
+            cube.position.set(0, 0, 0);
+            block.add(cube);
+            return block;
+        }
+        
+        // Create cubes at each position
+        cubePositions.forEach(pos => {
             // Create a placeholder for the cube
             // The actual mesh will be created by the renderer
             const cube = new THREE.Object3D();

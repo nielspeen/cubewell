@@ -66,6 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let audioInitialized = false;
     let gameInitialized = false;
     let rendererInitialized = false;
+    let game = null;
+    let renderer = null;
     
     try {
         // Initialize audio system first
@@ -79,7 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Create the game and renderer
     console.log("2. Creating game and renderer");
-    let game, renderer;
     
     try {
         // Create game instance
@@ -87,54 +88,66 @@ document.addEventListener('DOMContentLoaded', function() {
         gameInitialized = true;
         console.log("✓ Game instance created");
         
-        // Create renderer instance
-        const canvasContainer = document.getElementById('canvas-container');
-        const previewContainer = document.getElementById('preview-container');
-        renderer = new Renderer(canvasContainer, previewContainer);
-        
-        // Set the renderer on the game
-        game.setRenderer(renderer);
-        
-        // Initialize the renderer with the pit
-        renderer.init(game.pit, game);
-        rendererInitialized = true;
-        console.log("✓ Renderer initialized");
-        console.log("3. Game and renderer connected");
+        try {
+            // Create renderer instance
+            const canvasContainer = document.getElementById('canvas-container');
+            const previewContainer = document.getElementById('preview-container');
+            renderer = new Renderer(canvasContainer, previewContainer);
+            
+            // Set the renderer on the game
+            game.setRenderer(renderer);
+            
+            // Initialize the renderer with the pit
+            renderer.init(game.pit, game);
+            rendererInitialized = true;
+            console.log("✓ Renderer initialized");
+            console.log("3. Game and renderer connected");
+        } catch (e) {
+            console.error("! Renderer creation failed:", e);
+        }
     } catch (e) {
-        console.error("! Game/Renderer creation failed:", e);
+        console.error("! Game creation failed:", e);
     }
     
-    if (gameInitialized && rendererInitialized) {
+    if (gameInitialized) {
         // Make game globally available for debugging
         window.game = game;
     } else {
-        console.error("Cannot continue - game or renderer failed to initialize");
+        console.warn("Game not initialized, continuing with limited functionality");
+        
+        // Create a minimal stub game object for UI to use
+        game = {
+            state: { score: 0, level: 1, highScore: 0 },
+            isRunning: function() { return false; },
+            isPaused: function() { return true; },
+            isGameOver: function() { return false; },
+            moveCurrentBlock: function() { return false; },
+            rotateCurrentBlock: function() { return false; },
+            dropCurrentBlock: function() { return false; },
+            unpause: function() { console.log("Cannot unpause - game not initialized"); }
+        };
     }
     
     // Set up UI with the game instance
     console.log("4. Setting up UI");
     try {
-        if (gameInitialized) {
-            // Check if UI.setGame is a function
-            if (typeof UI.setGame === 'function') {
-                UI.setGame(game);
-                console.log("✓ UI game reference set");
-            } else {
-                console.error("! UI.setGame is not a function");
-                // Assign directly as fallback
-                UI.game = game;
-                console.log("? Used UI.game direct assignment as fallback");
-            }
-            
-            // Initialize UI components
-            if (typeof UI.init === 'function') {
-                UI.init();
-                console.log("✓ UI initialized");
-            } else {
-                console.error("! UI.init is not a function");
-            }
+        // Check if UI.setGame is a function
+        if (typeof UI.setGame === 'function') {
+            UI.setGame(game);
+            console.log("✓ UI game reference set");
         } else {
-            console.error("Cannot set up UI - game not initialized");
+            console.error("! UI.setGame is not a function");
+            // Assign directly as fallback
+            UI.game = game;
+            console.log("? Used UI.game direct assignment as fallback");
+        }
+        
+        // Initialize UI components
+        if (typeof UI.init === 'function') {
+            UI.init();
+            console.log("✓ UI initialized");
+        } else {
+            console.error("! UI.init is not a function");
         }
     } catch (e) {
         console.error("! UI setup failed:", e);
@@ -150,14 +163,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Check if a block was spawned
                 if (!game.currentBlock) {
-                    console.warn("! No current block after starting - attempting to spawn one");
-                    game._spawnBlock();
+                    console.warn("! No current block after starting - attempting to spawn block");
+                    if (typeof game._spawnBlock === 'function') {
+                        game._spawnBlock();
+                    }
                 }
             } else {
                 console.log("Game already running");
             }
         } catch (e) {
             console.error("! Game start failed:", e);
+        }
+    } else {
+        console.warn("Cannot start game - not initialized");
+        
+        // Update status display to show error
+        const statusEl = document.getElementById('game-running-status');
+        if (statusEl) {
+            statusEl.textContent = "ERROR - Game not initialized";
+            statusEl.style.color = "red";
+        }
+        
+        // Show an error message
+        const startMessage = document.getElementById('start-message');
+        if (startMessage) {
+            startMessage.textContent = "Game initialization failed. Please refresh the page to try again.";
+            startMessage.style.display = "block";
+            startMessage.style.color = "red";
         }
     }
     
@@ -203,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Only handle other keys if game is running and not paused
-            if (!game || !game.isRunning() || game.isPaused()) {
+            if (!game || !game.isRunning || !game.isRunning() || game.isPaused()) {
                 console.log(`Game not running or paused, ignoring key: ${event.key}`);
                 keyState.handlingKeyDown = false;
                 return;
@@ -287,14 +319,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'r':
                     // R resets the game
-                    game.reset();
-                    game.start();
+                    if (typeof game.reset === 'function' && typeof game.start === 'function') {
+                        game.reset();
+                        game.start();
+                    }
                     blockAllKeyProcessing(500); // Even longer cooldown for reset
                     event.preventDefault();
                     break;
                 case 'm':
                     // M toggles music
-                    AudioManager.toggleMusic();
+                    if (audioInitialized) {
+                        AudioManager.toggleMusic();
+                    }
                     blockAllKeyProcessing();
                     event.preventDefault();
                     break;
@@ -314,53 +350,58 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("! Keyboard setup failed:", e);
     }
     
-    // Set up status update interval
+    // Set up status display updates
     console.log("7. Setting up status display updates");
     try {
-        // Initial status display
-        if (UI.elements.gameStateDisplay) {
-            UI.elements.gameStateDisplay.textContent = "PRESS SPACE TO START";
-            
-            // Add a blinking effect to draw attention
-            let blinkCount = 0;
-            const blinkInterval = setInterval(() => {
-                if (blinkCount > 10 || !game.isPaused()) {
-                    clearInterval(blinkInterval);
-                    if (UI.elements.gameStateDisplay && game.isPaused()) {
-                        UI.elements.gameStateDisplay.style.opacity = "1";
-                    }
-                    return;
+        // Update game status display
+        function updateGameStatus() {
+            // Update running status
+            if (UI.elements.gameStateDisplay) {
+                let statusText = "UNKNOWN";
+                let statusColor = "white";
+                
+                if (!game) {
+                    statusText = "ERROR";
+                    statusColor = "red";
+                } else if (game.isGameOver && game.isGameOver()) {
+                    statusText = "GAME OVER";
+                    statusColor = "red";
+                } else if (game.isPaused && game.isPaused()) {
+                    statusText = "PAUSED";
+                    statusColor = "yellow";
+                } else if (game.isRunning && game.isRunning()) {
+                    statusText = "RUNNING";
+                    statusColor = "lime";
                 }
                 
-                if (UI.elements.gameStateDisplay) {
-                    UI.elements.gameStateDisplay.style.opacity = 
-                        UI.elements.gameStateDisplay.style.opacity === "0.3" ? "1" : "0.3";
-                    blinkCount++;
+                UI.elements.gameStateDisplay.textContent = statusText;
+                UI.elements.gameStateDisplay.style.color = statusColor;
+            }
+            
+            // Update score and level if available
+            if (game && game.state) {
+                if (UI.elements.scoreDisplay) {
+                    UI.elements.scoreDisplay.textContent = game.state.score || 0;
                 }
-            }, 500);
+                
+                if (UI.elements.levelDisplay) {
+                    UI.elements.levelDisplay.textContent = game.state.level || 1;
+                }
+                
+                if (UI.elements.highScoreDisplay) {
+                    UI.elements.highScoreDisplay.textContent = game.state.highScore || 0;
+                }
+            }
+            
+            // Schedule next update
+            requestAnimationFrame(updateGameStatus);
         }
         
-        // Regular status updates
-        setInterval(function() {
-            if (!game) return;
-            
-            // Update game state display
-            if (UI.elements.gameStateDisplay) {
-                UI.elements.gameStateDisplay.textContent = game.isRunning() ? 
-                    (game.isPaused() ? "PAUSED" : "RUNNING") : "STOPPED";
-            }
-            
-            // Update position display if exists
-            if (UI.elements.positionDisplay && game.currentBlock) {
-                const pos = game.currentBlock.position;
-                UI.elements.positionDisplay.textContent = 
-                    `x: ${pos.x}, y: ${pos.y}, z: ${pos.z}`;
-            }
-        }, 100);
-        
+        // Start status updates
+        updateGameStatus();
         console.log("✓ Status updates initialized");
     } catch (e) {
-        console.error("! Status update setup failed:", e);
+        console.error("! Status updates setup failed:", e);
     }
     
     console.log("=== Initialization Complete ===");
