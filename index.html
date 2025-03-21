@@ -158,6 +158,50 @@
     }, 2000);
     </script>
 
+    <!-- Add a direct space key handler to start the game -->
+    <script>
+    document.addEventListener('keydown', function(event) {
+        // If space key is pressed
+        if (event.key === ' ' || event.code === 'Space') {
+            console.log("Space key pressed directly on document");
+            
+            // Check if game exists
+            if (window.game) {
+                // Check if game is paused
+                if (window.game.isPaused && window.game.isPaused()) {
+                    console.log("Direct space handler: Game is paused, unpausing...");
+                    
+                    // Try to unpause the game
+                    if (window.game.resume) {
+                        window.game.resume();
+                    } else if (window.game.unpause) {
+                        window.game.unpause();
+                    }
+                    
+                    // Hide the start message
+                    const startMessage = document.getElementById('start-message');
+                    if (startMessage) {
+                        startMessage.style.display = 'none';
+                    }
+                    
+                    // Update status display
+                    const statusEl = document.getElementById('game-running-status');
+                    if (statusEl) {
+                        statusEl.textContent = "RUNNING";
+                        statusEl.style.color = "lime";
+                    }
+                    
+                    // Remove paused class from game screen
+                    const gameScreen = document.getElementById('game-screen');
+                    if (gameScreen) {
+                        gameScreen.classList.remove('paused');
+                    }
+                }
+            }
+        }
+    });
+    </script>
+
     <style>
     /* Prominent start message styling */
     #start-message {

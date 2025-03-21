@@ -217,7 +217,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update status display to show game is starting
                 if (UI.elements.gameStateDisplay) {
-                    UI.elements.gameStateDisplay.textContent = "STARTING...";
+                    UI.elements.gameStateDisplay.textContent = "RUNNING";
+                    UI.elements.gameStateDisplay.style.color = "lime";
                 }
                 
                 // Remove any dimming overlay if it exists
@@ -230,6 +231,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const startMessage = document.getElementById('start-message');
                 if (startMessage) {
                     startMessage.style.display = 'none';
+                }
+                
+                // Remove paused class from game screen to hide overlay
+                const gameScreen = document.getElementById('game-screen');
+                if (gameScreen) {
+                    gameScreen.classList.remove('paused');
                 }
                 
                 // Unpause the game - try resume() first, then unpause()

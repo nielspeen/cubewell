@@ -262,11 +262,6 @@ const UI = {
             // Then start the game - this will put it in paused state
             this.game.start();
             
-            // Extra check to ensure proper paused state
-            this.game.state.isRunning = false;
-            this.game.state.isPaused = true;
-            this.game.state.isGameOver = false;
-            
             // Update UI to show paused state with start message
             if (this.elements.gameStateDisplay) {
                 this.elements.gameStateDisplay.textContent = "Paused";
@@ -358,14 +353,18 @@ const UI = {
         const isPaused = typeof this.game.isPaused === 'function' ? 
             this.game.isPaused() : this.game.state && this.game.state.isPaused;
         
+        console.log("UI: Toggle pause called with state:", { isRunning, isPaused });
+        
         if (isRunning && !isPaused) {
             // Pause the game
+            console.log("UI: Pausing game");
             if (typeof this.game.pause === 'function') {
                 this.game.pause();
             }
             
             if (this.elements.gameStateDisplay) {
                 this.elements.gameStateDisplay.textContent = "Paused";
+                this.elements.gameStateDisplay.style.color = "yellow";
             }
             
             // Add paused class to show overlay
@@ -383,6 +382,7 @@ const UI = {
             
         } else if (isPaused) {
             // Resume the game - try resume() first, then unpause() if resume doesn't exist
+            console.log("UI: Resuming game");
             if (typeof this.game.resume === 'function') {
                 this.game.resume();
             } else if (typeof this.game.unpause === 'function') {
@@ -391,6 +391,7 @@ const UI = {
             
             if (this.elements.gameStateDisplay) {
                 this.elements.gameStateDisplay.textContent = "Running";
+                this.elements.gameStateDisplay.style.color = "lime";
             }
             
             // Remove paused class to hide overlay
@@ -404,6 +405,8 @@ const UI = {
             if (startMessage) {
                 startMessage.style.display = 'none';
             }
+            
+            console.log("UI: Game resumed");
         }
     },
     

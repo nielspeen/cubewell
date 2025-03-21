@@ -202,6 +202,12 @@ class Game {
         if (this.debug) console.log("Game.unpause() - Unpausing game");
         
         this.state.isPaused = false;
+        this.state.isRunning = true;
+        
+        // Force renderer update if available
+        if (this.renderer && typeof this.renderer.refreshDisplay === 'function') {
+            this.renderer.refreshDisplay();
+        }
         
         // Restart the fall timer
         this._startFallTimer();

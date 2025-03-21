@@ -891,6 +891,96 @@ class Renderer {
             this.previewRenderer = null;
         }
     }
+
+    /**
+     * Force a refresh of the renderer display
+     * Call this when the game state changes and UI needs updating
+     */
+    refreshDisplay() {
+        if (!this.scene || !this.camera || !this.renderer) {
+            console.warn("Cannot refresh display - renderer not fully initialized");
+            return;
+        }
+        
+        // Force an immediate render
+        this.renderer.render(this.scene, this.camera);
+        
+        // Update preview if available
+        if (this.previewScene && this.previewCamera && this.previewRenderer) {
+            this.previewRenderer.render(this.previewScene, this.previewCamera);
+        }
+        
+        console.log("Renderer display refreshed");
+    }
+
+    /**
+     * Update the current block visualization
+     * @param {THREE.Object3D} block - The block object to visualize
+     */
+    _updateCurrentBlockMesh() {
+        if (!this.currentBlock || !this.currentBlockMesh) {
+            console.warn("Cannot update current block mesh - no block or mesh found");
+            return;
+        }
+        
+        // Clear existing mesh
+        this.currentBlockMesh.clear();
+        
+        // Get the block position
+        const pos = this.currentBlock.position;
+        
+        // Calculate position relative to pit center
+        // Add +0.5 offset to x and y coordinates for proper alignment with walls
+        const offsetX = -(this.pit.width / 2) + 0.5;
+        const offsetY = -(this.pit.depth / 2) + 0.5;
+        
+        // Set the position of the block mesh
+        this.currentBlockMesh.position.set(
+            pos.x + offsetX,
+            pos.y + offsetY,
+            pos.z + 0.5  // Add 0.5 offset to match the fixed blocks
+        );
+        
+        // ONLY animate rotations when deliberately initiated by the user
+        // This is the key part that prevents unwanted rotations
+        const isDeliberateRotation = this.game && this.game.isDeliberateRotation;
+        
+        if (isDeliberateRotation) {
+            // Start rotation animation for deliberate user rotations only
+            this._startRotationAnimation(this.currentBlock);
+            
+            // Update last applied rotation to prevent repeats
+            this.animationState.lastAppliedRotation.set(
+                this.currentBlock.rotation.x,
+                this.currentBlock.rotation.y,
+                this.currentBlock.rotation.z
+            );
+        } else {
+            // Just update rotation directly without animation
+            // For any non-deliberate updates, including falling and position changes
+            if (this.currentBlock.getRotationMatrix) {
+                // Use rotation matrix if available (more accurate)
+                const rotMatrix = this.currentBlock.getRotationMatrix();
+                if (rotMatrix) {
+                    this.currentBlockMesh.quaternion.setFromRotationMatrix(rotMatrix);
+                }
+            } else {
+                // Direct rotation update
+                this.currentBlockMesh.rotation.set(
+                    this.currentBlock.rotation.x,
+                    this.currentBlock.rotation.y,
+                    this.currentBlock.rotation.z
+                );
+            }
+            
+            // Update last applied rotation to prevent future animations
+            this.animationState.lastAppliedRotation.set(
+                this.currentBlock.rotation.x,
+                this.currentBlock.rotation.y,
+                this.currentBlock.rotation.z
+            );
+        }
+    }
 }
 
 export default Renderer; 
