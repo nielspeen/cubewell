@@ -194,20 +194,28 @@ class Pit {
         return filled;
     }
     
-    // Check if game is over (if the top layer has any filled positions)
+    // Check if game is over (if too many blocks are in the top layers)
     isGameOver() {
-        // Check top few layers for any filled positions
-        const checkLayers = 3; // Check top 3 layers
+        // Check top 2 layers for filled positions
+        const checkLayers = 2; // Check top 2 layers
         const startZ = this.height - checkLayers;
+        
+        // Count filled positions in top layers
+        let filledCount = 0;
+        const threshold = 3; // Need at least 3 filled spaces to consider game over
         
         for (let z = startZ; z < this.height; z++) {
             for (let x = 0; x < this.width; x++) {
                 for (let y = 0; y < this.depth; y++) {
                     if (!this.isEmpty(x, y, z)) {
-                        if (this.debug) {
-                            console.log(`Game over: found block at ${x}, ${y}, ${z}`);
+                        filledCount++;
+                        
+                        if (filledCount >= threshold) {
+                            if (this.debug) {
+                                console.log(`Game over: found ${filledCount} blocks in top ${checkLayers} layers`);
+                            }
+                            return true;
                         }
-                        return true;
                     }
                 }
             }
@@ -223,4 +231,6 @@ class Pit {
         }
         this.grid = this._createEmptyGrid();
     }
-} 
+}
+
+export default Pit; 

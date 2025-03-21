@@ -4,6 +4,10 @@
  * scoring, and game progression
  */
 
+import Pit from './pit.js';
+import PolycubeLibrary from './polycubes.js';
+import AudioManager from './audio.js';
+
 class Game {
     constructor(renderer) {
         // Game settings
@@ -24,6 +28,7 @@ class Game {
             level: 1,
             isRunning: false,
             isGameOver: false,
+            isPaused: false,
             fallSpeed: this.settings.initialFallSpeed
         };
         
@@ -61,6 +66,22 @@ class Game {
         this._bindEvents();
     }
     
+    // Reset the game completely
+    reset() {
+        console.log("Game.reset() - Completely resetting game state");
+        
+        // Clear any ongoing timers
+        clearTimeout(this.fallTimer);
+        
+        // Reset core variables
+        this.currentBlock = null;
+        this.nextBlock = null;
+        this.blockBag = [];
+        
+        // Call init to reset the game state and prepare everything
+        this.init();
+    }
+    
     // Initialize or reset the game
     init() {
         if (this.debug) console.log("Game.init() - Initializing game");
@@ -70,6 +91,7 @@ class Game {
         this.state.level = 1;
         this.state.isRunning = false;
         this.state.isGameOver = false;
+        this.state.isPaused = false;
         this.state.fallSpeed = this.settings.initialFallSpeed;
         
         // Reset the pit
@@ -108,8 +130,16 @@ class Game {
             this.init();
         }
         
-        // Ensure the game is running
-        this.state.isRunning = true;
+        // Set game state
+        this.state.isRunning = false;  // Start in paused state
+        this.state.isPaused = true;    // Set paused flag
+        this.state.isGameOver = false;
+        
+        // Make sure the pit is clear of any blocks
+        if (this.pit.getFilledPositions().length > 0) {
+            console.log("Pit has filled positions at start - clearing pit");
+            this.pit.reset();
+        }
         
         // Spawn the first block if we don't have one
         if (!this.currentBlock) {
@@ -122,15 +152,20 @@ class Game {
             this.renderer.updatePit(this.pit);
         }
         
-        // Start the fall timer
-        this._startFallTimer();
+        // Don't start the fall timer yet - will be started when user presses SPACE
         
         // Start the background music
-        AudioManager.startMusic();
+        try {
+            AudioManager.startMusic();
+        } catch (e) {
+            console.warn("Could not start music:", e);
+        }
         
         if (this.debug) {
-            console.log("Game started with state:", {
+            console.log("Game started in paused state:", {
                 running: this.state.isRunning,
+                paused: this.state.isPaused,
+                gameOver: this.state.isGameOver,
                 block: this.currentBlock ? "present" : "missing",
                 position: this.currentBlock ? this.currentBlock.position : "N/A"
             });
@@ -142,6 +177,7 @@ class Game {
         if (!this.state.isRunning) return;
         
         this.state.isRunning = false;
+        this.state.isPaused = true;
         clearTimeout(this.fallTimer);
     }
     
@@ -150,6 +186,7 @@ class Game {
         if (this.state.isRunning || this.state.isGameOver) return;
         
         this.state.isRunning = true;
+        this.state.isPaused = false;
         this._startFallTimer();
     }
     
@@ -172,8 +209,23 @@ class Game {
     
     // Handle key input
     handleKeyInput(key) {
-        console.log(`Game.handleKeyInput: ${key}, isRunning: ${this.state.isRunning}, hasBlock: ${Boolean(this.currentBlock)}`);
+        console.log(`Game.handleKeyInput: ${key}, isRunning: ${this.state.isRunning}, isPaused: ${this.state.isPaused}, isGameOver: ${this.state.isGameOver}`);
         
+        // Space key has two behaviors:
+        // 1. In paused initial state - start the game (handled by main.js)
+        // 2. In running state - drop the block
+        if (key === ' ') {
+            if (this.state.isPaused && !this.state.isRunning) {
+                console.log("Space key in paused initial state - handled by main.js");
+                return;
+            } else if (this.state.isRunning && this.currentBlock) {
+                console.log("Space key in running state - dropping block");
+                this.dropBlock();
+                return;
+            }
+        }
+        
+        // For all other keys - only process if the game is running
         if (!this.state.isRunning) {
             console.log("Game is not running, ignoring key input");
             return;
@@ -208,8 +260,8 @@ class Game {
             // Rotation
             case 'q':
             case 'Q':
-                console.log("Rotating X");
-                this.rotateBlock('x', Math.PI/2);
+                console.log("Rotating X (reversed direction)");
+                this.rotateBlock('x', -Math.PI/2);  // Reversed direction
                 break;
             case 'w':
             case 'W':
@@ -220,12 +272,6 @@ class Game {
             case 'E':
                 console.log("Rotating Z (reversed direction)");
                 this.rotateBlock('z', -Math.PI/2);  // Reversed direction
-                break;
-                
-            // Drop
-            case ' ':
-                console.log("Dropping block");
-                this.dropBlock();
                 break;
         }
     }
@@ -467,8 +513,8 @@ class Game {
             if (cube.z > maxZ) maxZ = cube.z;
         });
         
-        // Position the block at the top center of the pit
-        // But adjust Z position to ensure the block fits within the pit height
+        // Position the block at the top center of the pit with padding
+        // Adjust X and Y to be slightly more centered if needed
         this.currentBlock.position.x = Math.floor(this.settings.pitWidth / 2) - 1;
         this.currentBlock.position.y = Math.floor(this.settings.pitDepth / 2) - 1;
         
@@ -495,17 +541,50 @@ class Game {
             console.log(`Block color index: ${this.currentBlock.colorIndex}`);
         }
         
-        // Force the game to be running for testing purposes
-        if (!this.state.isRunning) {
-            this.state.isRunning = true;
-            if (this.debug) console.log("Forcing game to running state");
-        }
-        
-        // Check if the new block can be placed (game over check)
+        // Check if we can actually place the block at the start position
         if (!this.pit.canPlacePolycube(this.currentBlock)) {
-            if (this.debug) console.log("Game over - can't place new block");
-            this.gameOver();
-            return;
+            console.error("Cannot place initial block - pit may be too full or block position invalid!");
+            
+            // Try repositioning higher up
+            for (let attempts = 0; attempts < 3; attempts++) {
+                // Move one unit higher
+                this.currentBlock.position.z += 1;
+                
+                // Check if this position works
+                if (this.pit.canPlacePolycube(this.currentBlock)) {
+                    console.log(`Block repositioned higher to z=${this.currentBlock.position.z} and now fits!`);
+                    
+                    // Update renderer with new position
+                    if (this.renderer) {
+                        this.renderer.setCurrentBlock(this.currentBlock);
+                    }
+                    
+                    return; // Success!
+                }
+            }
+            
+            // If we get here, even raising the block didn't help
+            // But don't trigger game over if we haven't even started yet (score is still 0)
+            if (this.state.score > 0) {
+                // This is a real game over situation
+                console.error("Game over - cannot place initial block even after repositioning!");
+                this.gameOver();
+            } else {
+                // We're just starting, so clear the pit and try again
+                console.log("First block couldn't be placed. Clearing pit and trying again...");
+                this.pit.reset();
+                
+                // Reposition the block at the top center again
+                this.currentBlock.position.x = Math.floor(this.settings.pitWidth / 2) - 1;
+                this.currentBlock.position.y = Math.floor(this.settings.pitDepth / 2) - 1;
+                this.currentBlock.position.z = this.settings.pitHeight - 1;
+                
+                // Update the renderer
+                if (this.renderer) {
+                    this.renderer.setCurrentBlock(this.currentBlock);
+                    this.renderer.updatePit(this.pit);
+                }
+            }
         }
         
         // Trigger callback for next block change
@@ -601,4 +680,6 @@ class Game {
             this.callbacks[callbackName] = callback;
         }
     }
-} 
+}
+
+export default Game; 

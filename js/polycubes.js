@@ -221,4 +221,6 @@ const PolycubeLibrary = {
         
         return bag.map(polycube => polycube.clone());
     }
-}; 
+};
+
+export default PolycubeLibrary; 
