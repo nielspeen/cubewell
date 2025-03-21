@@ -1,44 +1,26 @@
-Instructions for AI Coding Agent: Web Implementation of "CubeWell"
-
 You are tasked with developing CubeWell, a web-based 3D puzzle game inspired by the classic "Blockout." In this game, players stack falling 3D blocks (polycubes) into a pit to form solid layers without gaps. Completing a layer clears it, causing the layers above to drop down, and the goal is to score points while preventing the pit from filling up completely. Below are detailed, actionable instructions to implement this game using modern web technologies, ensuring compatibility with both desktop and mobile devices.
 
 Technology Stack
 
-Frontend: HTML5, CSS3, JavaScript
+* HTML5
+* CSS3
+* JavaScript
+* Three.js
 
-
-
-3D Graphics: Three.js (a WebGL-based library for 3D rendering)
-
-
-
-Audio: Web Audio API for sound effects and background music
-
-
-
-Optional Libraries: Use additional libraries if needed, such as Hammer.js for touch gestures or dat.GUI for debugging.
+Use additional libraries if needed.
 
 
 Game Overview
 
 Objective: Stack falling polycubes into a 3D pit to create complete layers, which then clear to earn points.
 
-
-
-View: Players look down into a pit. The bottom should be 5x5. The pit should be 10 levels deep.
-
-
+View: Players look down into a pit from the top. As if they are looking into a well from above. The bottom should be 5x5. The pit should be 12 levels deep.
 
 Controls: Move blocks horizontally, rotate them around all three axes (x, y, z), and drop them quickly.
 
-
-
 Scoring: Earn points for placing blocks, clearing layers, and achieving combos (e.g., clearing multiple layers at once).
 
-
-
 Game Over: The game ends when a new block cannot be placed because the pit is too full.
-
 
 Step-by-Step Implementation
 
@@ -48,23 +30,13 @@ Scene Creation:
 
 Use Three.js to initialize a 3D scene with a camera, renderer, and lighting.
 
-
-
-Set the camera above the pit, pointing downward, with a field of view that shows the entire pit (e.g., perspective camera with FOV 45°).
-
-
 Pit Design:
 
-Define the pit as a 3D grid (e.g., 5 width x 5 depth x 10 height). Each cell is a 1x1x1 cube.
-
-
+Define the pit as a 3D grid (e.g., 5 width x 5 depth x 12 height). Each cell is a 1x1x1 cube.
 
 Represent the pit internally as a 3D array, where each position is either empty or filled.
 
-
-
-Optionally, render the pit’s boundaries with semi-transparent walls for visual clarity.
-
+Render the pit’s boundaries as a neon-blue wiregrid.
 
 2. Generate Polycube Blocks
 
@@ -72,20 +44,10 @@ Polycube Definition:
 
 Create a library of polycube shapes (3D block configurations), starting with simple ones:
 
-Straight line (3 or 4 cubes in a row)
-
-
-
-3D L-shape (e.g., 3 cubes in a line with 1 cube branching off)
-
-
-
-2x2x2 cube
-
-
-
-Add more complex shapes for higher difficulty later.
-
+* Straight line (3 or 4 cubes in a row)
+* 3D L-shape (e.g., 3 cubes in a line with 1 cube branching off)
+* 2x2x2 cube
+* Add more complex shapes for higher difficulty later.
 
 Represent each polycube as a set of cube positions relative to a central pivot point (e.g., [(0,0,0), (1,0,0), (2,0,0)] for a 3-cube line).
 
@@ -94,7 +56,6 @@ Randomization:
 
 Implement a randomizer to select the next block, ensuring no shape repeats too often (e.g., use a bag system like in Tetris).
 
-
 3. Implement Block Controls
 
 Movement:
@@ -102,25 +63,17 @@ Movement:
 Allow horizontal movement (left, right, forward, backward) within the pit’s boundaries.
 
 
-
 Desktop: Use arrow keys.
-
-
-
 Mobile: Add on-screen buttons or swipe gestures.
 
 
 Rotation:
 
 Enable rotation around x, y, and z axes using quaternions or Euler angles.
-
-
-
 Desktop: Use keys like Q (x-axis), W (y-axis), E (z-axis).
-
-
-
 Mobile: Provide on-screen rotation buttons or pinch/twist gestures.
+
+The rotation sould be animated.
 
 
 Drop:
@@ -139,8 +92,6 @@ Falling Mechanics:
 
 Make the block fall automatically at a set speed (e.g., 1 cube per second initially).
 
-
-
 Increase the speed as the game progresses (e.g., every 5 layers cleared).
 
 
@@ -152,13 +103,7 @@ Check for collisions with the pit bottom or other blocks. When a collision occur
 Landing:
 
 Add the block’s cubes to the pit’s grid.
-
-
-
 Trigger layer-checking logic (see step 5).
-
-
-
 Spawn a new block at the top center of the pit.
 
 
@@ -172,15 +117,8 @@ If the new block’s starting position is occupied, end the game.
 Layer Check:
 
 After each block lands, scan each z-level (layer) in the pit.
-
-
-
 If a layer is fully filled (no empty cells), clear it:
-
 Remove all cubes in that layer.
-
-
-
 Shift all layers above it down by one level.
 
 
@@ -227,24 +165,15 @@ Introduce new polycube shapes at higher levels.
 Elements:
 
 Display score, level, and a preview of the next block.
-
-
-
 Show a game over screen with the final score and a restart option.
 
 
 
-Include a main menu with:
-
-Start New Game
-
+There should be no menu whatsoever. Upon loading the page the game should start immediately,
+be it in a paused state. Hitting spacebar should then start (or really resume) the game.
 
 
 High Scores (stored via localStorage)
-
-
-
-Settings (sound volume, difficulty)
 
 
 Mobile Optimization:
@@ -272,16 +201,10 @@ Audio:
 Include sound effects for:
 
 Block movement
-
-
-
 Rotation
-
-
-
 Landing
 
-
+Have an exciting music in the background. MSX-style retro sounds.
 
 Layer clearing
 
@@ -298,9 +221,6 @@ Current falling block
 
 
 Pit grid (filled/empty cells)
-
-
-
 Score, level, cleared layers
 
 
@@ -316,22 +236,13 @@ Save high scores locally using localStorage.
 10. Optimize for Performance
 
 Use efficient rendering (e.g., instanced meshes for cubes).
-
-
-
 Minimize draw calls and optimize shaders.
-
-
-
 Test frame rate on low-end devices to ensure smoothness.
 
 
 11. Testing and Compatibility
 
 Test on major browsers (Chrome, Firefox, Safari) and devices (desktop, mobile).
-
-
-
 Verify that keyboard and touch controls work intuitively.
 
 
