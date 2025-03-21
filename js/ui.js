@@ -9,7 +9,10 @@ const UI = {
     // Debug mode
     debug: true,
     
-    // DOM elements
+    // Game reference
+    game: null,
+    
+    // Store UI elements
     elements: {
         // Screens
         menuScreen: null,
@@ -50,12 +53,15 @@ const UI = {
         highScoresList: null
     },
     
-    // Game instance
-    game: null,
+    // Set the game instance
+    setGame(game) {
+        if (this.debug) console.log("UI: Setting game instance");
+        this.game = game;
+    },
     
     // Initialize the UI
-    init(game) {
-        this.game = game;
+    init() {
+        if (this.debug) console.log("UI: Initializing");
         this._cacheElements();
         this._bindEvents();
         this._loadSettings();

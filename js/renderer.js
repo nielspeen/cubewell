@@ -39,6 +39,18 @@ class Renderer {
         // Animation frame
         this.animationFrame = null;
         
+        // Block rotation animation properties
+        this.animationState = {
+            rotating: false,
+            startRotation: new THREE.Euler(),
+            targetRotation: new THREE.Euler(),
+            startTime: 0,
+            duration: 200, // milliseconds for rotation animation
+            axis: null,
+            angle: 0,
+            lastAppliedRotation: new THREE.Euler(0, 0, 0) // Track the last applied rotation
+        };
+        
         // Debug mode
         this.debug = true;
         
@@ -65,10 +77,18 @@ class Renderer {
     
     // Initialize the renderer with game objects
     init(pit, game) {
-        if (this.debug) console.log("Renderer.init() - Initializing renderer");
+        if (this.debug) console.log("Renderer.init() - Initializing renderer with pit:", pit);
+        
+        if (!pit) {
+            console.error("No pit provided to renderer.init()!");
+            return;
+        }
         
         this.pit = pit;
-        this.game = game;
+        this.game = game;  // Store reference to the game for checking deliberate rotations
+        
+        // Clean up any existing elements
+        this._clearScene();
         
         this._setupThreeJs();
         this._setupMaterials();
@@ -83,26 +103,47 @@ class Renderer {
         window.addEventListener('resize', () => this._handleResize());
         this._handleResize();
         
+        // Force a first render
+        this.renderer.render(this.scene, this.camera);
+        if (this.previewRenderer) {
+            this.previewRenderer.render(this.previewScene, this.previewCamera);
+        }
+        
         if (this.debug) {
             console.log(`Pit dimensions: ${pit.width} x ${pit.depth} x ${pit.height}`);
             console.log(`Camera position:`, this.camera.position);
-            console.log(`Pit mesh position:`, this.pitMesh.position);
+            console.log(`Pit mesh position:`, this.pitMesh ? this.pitMesh.position : "No pit mesh");
+            
+            // Additional debug - check if there are any objects in the scene
+            console.log(`Scene objects: ${this.scene.children.length}`);
+            this.scene.children.forEach((child, index) => {
+                console.log(`Scene child ${index}:`, child.type, child.position);
+            });
         }
     }
     
     // Set up Three.js scene, camera, and renderer
     _setupThreeJs() {
+        console.log("Setting up Three.js environment");
+        
         // Main scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(this.colors.background);
         
         // Create a perspective camera
-        const aspect = this.canvasContainer.clientWidth / this.canvasContainer.clientHeight;
+        const aspect = this.canvasContainer ? 
+            (this.canvasContainer.clientWidth / this.canvasContainer.clientHeight) : 
+            window.innerWidth / window.innerHeight;
+            
+        console.log("Canvas container:", this.canvasContainer ? 
+            `${this.canvasContainer.clientWidth}x${this.canvasContainer.clientHeight}` : 
+            "Not found, using window dimensions");
+            
         this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
         
-        // Position the camera directly above the pit looking down
-        // Like looking into the trunk of an SUV
-        this.camera.position.set(0, 0, 15);  // Centered above the pit
+        // Position the camera for a good 3D view of the pit
+        // X is left/right, Y is forward/backward, Z is up/down
+        this.camera.position.set(0, 0, 18);  // Positioned directly above the pit
         this.camera.lookAt(0, 0, 0);         // Looking straight down into the pit
         
         if (this.debug) {
@@ -111,28 +152,60 @@ class Renderer {
         }
         
         // Create the renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setSize(this.canvasContainer.clientWidth, this.canvasContainer.clientHeight);
-        this.renderer.shadowMap.enabled = true;
+        try {
+            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            
+            // Check if container exists, otherwise use document.body
+            if (!this.canvasContainer) {
+                console.warn("Canvas container not found, creating fallback container");
+                this.canvasContainer = document.createElement('div');
+                this.canvasContainer.id = 'canvas-container-fallback';
+                this.canvasContainer.style.width = '100%';
+                this.canvasContainer.style.height = '400px';
+                document.body.appendChild(this.canvasContainer);
+            }
+            
+            const width = this.canvasContainer.clientWidth || 800;
+            const height = this.canvasContainer.clientHeight || 600;
+            
+            this.renderer.setSize(width, height);
+            this.renderer.shadowMap.enabled = true;
+            
+            // Add to DOM
+            this.canvasContainer.innerHTML = ''; // Clear any existing content
+            this.canvasContainer.appendChild(this.renderer.domElement);
+            
+            console.log(`Renderer created with size ${width}x${height}`);
+        } catch (e) {
+            console.error("Failed to create WebGL renderer:", e);
+        }
         
-        // Add to DOM
-        this.canvasContainer.appendChild(this.renderer.domElement);
-        
-        // Preview scene
-        this.previewScene = new THREE.Scene();
-        this.previewScene.background = new THREE.Color(this.colors.background);
-        
-        // Preview camera
-        this.previewCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-        this.previewCamera.position.set(0, 0, 5);
-        this.previewCamera.lookAt(0, 0, 0);
-        
-        // Preview renderer
-        this.previewRenderer = new THREE.WebGLRenderer({ antialias: true });
-        this.previewRenderer.setSize(100, 100);
-        
-        // Add preview to DOM
-        this.previewContainer.appendChild(this.previewRenderer.domElement);
+        // Preview scene - add error handling
+        try {
+            this.previewScene = new THREE.Scene();
+            this.previewScene.background = new THREE.Color(this.colors.background);
+            
+            // Preview camera
+            this.previewCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+            this.previewCamera.position.set(3, -3, 5);
+            this.previewCamera.lookAt(0, 0, 0);
+            
+            // Preview renderer
+            if (this.previewContainer) {
+                this.previewRenderer = new THREE.WebGLRenderer({ antialias: true });
+                this.previewRenderer.setSize(100, 100);
+                
+                // Add preview to DOM
+                this.previewContainer.innerHTML = ''; // Clear any existing content
+                this.previewContainer.appendChild(this.previewRenderer.domElement);
+                
+                console.log("Preview renderer created");
+            } else {
+                console.warn("Preview container not found, skipping preview renderer");
+            }
+        } catch (e) {
+            console.error("Failed to create preview renderer:", e);
+        }
     }
     
     // Set up materials and geometries
@@ -150,14 +223,14 @@ class Renderer {
     
     // Set up lights
     _setupLights() {
-        // Ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        // Ambient light - slightly reduced to allow directional lights to create shadows
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
         this.previewScene.add(ambientLight.clone());
         
-        // Main overhead light for top-down view
-        const topLight = new THREE.SpotLight(0xffffff, 1.0);
-        topLight.position.set(0, 0, 18);  // Positioned above the pit
+        // Main overhead light - more focused on the pit
+        const topLight = new THREE.SpotLight(0xffffff, 1.2);
+        topLight.position.set(0, 0, 20);  // Positioned above the pit
         topLight.angle = Math.PI / 4;     // Narrower angle for more focused light
         topLight.penumbra = 0.2;          // Soft edges
         topLight.castShadow = true;
@@ -165,14 +238,21 @@ class Renderer {
         topLight.shadow.mapSize.height = 1024;
         this.scene.add(topLight);
         
-        // Side lights to provide dimension and help see the blocks better
-        const sideLight1 = new THREE.DirectionalLight(0xffffcc, 0.6);
-        sideLight1.position.set(5, 5, 10);
-        this.scene.add(sideLight1);
+        // Side lights to provide dimension and help see the 3D structure
+        // Front-right light with warmer tone
+        const frontLight = new THREE.DirectionalLight(0xffffcc, 0.7);
+        frontLight.position.set(8, -8, 12);
+        this.scene.add(frontLight);
         
-        const sideLight2 = new THREE.DirectionalLight(0xccffff, 0.6);
-        sideLight2.position.set(-5, -5, 10);
-        this.scene.add(sideLight2);
+        // Back-left light with cooler tone
+        const backLight = new THREE.DirectionalLight(0xccffff, 0.7);
+        backLight.position.set(-8, 8, 12);
+        this.scene.add(backLight);
+        
+        // Lower side light to illuminate the pit walls
+        const sideLight = new THREE.DirectionalLight(0xffffee, 0.5);
+        sideLight.position.set(15, 0, 5);
+        this.scene.add(sideLight);
         
         // Preview light
         const previewLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -182,7 +262,13 @@ class Renderer {
     
     // Set up the pit visualization
     _setupPit() {
-        if (!this.pit) return;
+        if (!this.pit) {
+            console.error("Cannot setup pit - this.pit is null");
+            return;
+        }
+        
+        console.log("Setting up pit visualization with dimensions:", 
+            this.pit.width, this.pit.depth, this.pit.height);
         
         // Create a group for the pit
         this.pitMesh = new THREE.Group();
@@ -201,7 +287,7 @@ class Renderer {
         const wallMaterial = new THREE.MeshLambertMaterial({
             color: 0x4488CC,
             transparent: true,
-            opacity: 0.3,  // More transparent
+            opacity: 0.4,  // More visible but still transparent
             side: THREE.DoubleSide
         });
         
@@ -224,6 +310,8 @@ class Renderer {
             { size: [width, 0.1, height], position: [0, depth + offsetY + 0.05, height / 2 + offsetZ], material: wallMaterial }
         ];
         
+        console.log("Creating pit walls...");
+        
         // Create each wall
         walls.forEach(wall => {
             const geometry = new THREE.BoxGeometry(wall.size[0], wall.size[1], wall.size[2]);
@@ -232,11 +320,24 @@ class Renderer {
             this.pitMesh.add(mesh);
         });
         
-        // Add more visible grid lines for a top-down view
+        // Add more visible grid lines for bottom
         const gridHelper = new THREE.GridHelper(Math.max(width, depth), Math.max(width, depth), 0xFFFFFF, 0x888888);
         gridHelper.rotation.x = Math.PI / 2;
         gridHelper.position.z = -0.04;  // Slightly above bottom for visibility
         this.pitMesh.add(gridHelper);
+        
+        // Add grid lines on the walls to emphasize 3D structure
+        // Back wall grid (Y axis)
+        const backGridHelper = new THREE.GridHelper(Math.max(width, height), Math.max(width, height), 0xFFFFFF, 0x888888);
+        backGridHelper.rotation.x = 0; // No rotation needed
+        backGridHelper.position.set(0, depth / 2 + 0.05, height / 2);
+        this.pitMesh.add(backGridHelper);
+        
+        // Side wall grid (X axis)
+        const sideGridHelper = new THREE.GridHelper(Math.max(depth, height), Math.max(depth, height), 0xFFFFFF, 0x888888);
+        sideGridHelper.rotation.z = Math.PI / 2; // Rotate to be vertical on side wall
+        sideGridHelper.position.set(width / 2 + 0.05, 0, height / 2);
+        this.pitMesh.add(sideGridHelper);
         
         // Add grid cell numbers for better orientation
         for (let x = 0; x < width; x++) {
@@ -260,33 +361,11 @@ class Renderer {
             }
         }
         
-        // Add a central marker at the spawn point for better orientation
-        const startX = Math.floor(this.pit.width / 2) - 1;
-        const startY = Math.floor(this.pit.depth / 2) - 1;
-        const startZ = this.pit.height - 1;
-        
-        const markerGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-        const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-        const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-        
-        const posX = startX - (width / 2) + 0.5;
-        const posY = startY - (depth / 2) + 0.5;
-        const posZ = startZ + 0.5;
-        
-        marker.position.set(posX, posY, posZ);
-        this.scene.add(marker);
-        
-        console.log(`Added marker at spawn point: ${posX}, ${posY}, ${posZ}`);
-        
         // Center the pit in the scene
         this.pitMesh.position.set(0, 0, 0);
         this.scene.add(this.pitMesh);
         
-        // Add a visible axis helper to debug coordinate system
-        if (this.debug) {
-            const axisHelper = new THREE.AxesHelper(5);
-            this.scene.add(axisHelper);
-        }
+        console.log("Pit visualization complete, added to scene");
         
         if (this.debug) {
             console.log('Pit dimensions:', width, depth, height);
@@ -323,6 +402,72 @@ class Renderer {
     _animate() {
         this.animationFrame = requestAnimationFrame(() => this._animate());
         
+        // Update any animations
+        this._updateAnimations();
+        
+        // Render the scene
+        this.renderer.render(this.scene, this.camera);
+        
+        // Render the preview scene if it exists
+        if (this.previewRenderer && this.previewScene && this.previewCamera) {
+            this.previewRenderer.render(this.previewScene, this.previewCamera);
+        }
+    }
+    
+    // Update animations
+    _updateAnimations() {
+        // Handle block rotation animation
+        if (this.animationState.rotating && this.currentBlockMesh) {
+            const now = Date.now();
+            const elapsed = now - this.animationState.startTime;
+            const progress = Math.min(elapsed / this.animationState.duration, 1);
+            
+            if (progress < 1) {
+                // Apply eased rotation
+                const easedProgress = this._easeInOutQuad(progress);
+                
+                if (this.animationState.axis) {
+                    // Interpolate rotation using axis and angle
+                    const currentAngle = this.animationState.angle * easedProgress;
+                    const quaternion = new THREE.Quaternion();
+                    quaternion.setFromAxisAngle(this.animationState.axis, currentAngle);
+                    this.currentBlockMesh.quaternion.copy(quaternion);
+                } else {
+                    // Fallback to Euler interpolation
+                    this.currentBlockMesh.rotation.x = this._lerp(
+                        this.animationState.startRotation.x,
+                        this.animationState.targetRotation.x,
+                        easedProgress
+                    );
+                    this.currentBlockMesh.rotation.y = this._lerp(
+                        this.animationState.startRotation.y,
+                        this.animationState.targetRotation.y,
+                        easedProgress
+                    );
+                    this.currentBlockMesh.rotation.z = this._lerp(
+                        this.animationState.startRotation.z,
+                        this.animationState.targetRotation.z,
+                        easedProgress
+                    );
+                }
+                
+                // Force render for smoother animation
+                this.renderer.render(this.scene, this.camera);
+            } else {
+                // Animation complete
+                this.animationState.rotating = false;
+                
+                // Set final rotation
+                if (this.animationState.axis) {
+                    const finalQuaternion = new THREE.Quaternion();
+                    finalQuaternion.setFromAxisAngle(this.animationState.axis, this.animationState.angle);
+                    this.currentBlockMesh.quaternion.copy(finalQuaternion);
+                } else {
+                    this.currentBlockMesh.rotation.copy(this.animationState.targetRotation);
+                }
+            }
+        }
+        
         // Rotate the preview block for better visibility
         if (this.previewBlockMesh) {
             this.previewBlockMesh.rotation.y += 0.01;
@@ -332,10 +477,16 @@ class Renderer {
         if (this.blockSpotlightHelper) {
             this.blockSpotlightHelper.update();
         }
-        
-        // Render the scenes
-        this.renderer.render(this.scene, this.camera);
-        this.previewRenderer.render(this.previewScene, this.previewCamera);
+    }
+    
+    // Easing function for smoother animation
+    _easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+    
+    // Linear interpolation helper
+    _lerp(start, end, t) {
+        return start * (1 - t) + end * t;
     }
     
     // Clear all meshes from the scene
@@ -410,17 +561,26 @@ class Renderer {
     // Set and render the current falling block
     setCurrentBlock(block) {
         if (!block) {
+            console.log("Removing current block (null block passed)");
             if (this.currentBlockMesh) {
                 this.scene.remove(this.currentBlockMesh);
                 this.currentBlockMesh = null;
             }
-            console.log("Removing current block (null block passed)");
             return;
         }
         
-        console.log("Setting current block:", block);
-        console.log("Block position:", block.position);
-        console.log("Block cubes:", block.cubes);
+        console.log("Setting current block:", {
+            id: block.id,
+            name: block.name,
+            position: block.position,
+            numCubes: block.cubes ? block.cubes.length : 'no cubes'
+        });
+        
+        // Check if the block is valid
+        if (!block.cubes || !Array.isArray(block.cubes) || block.cubes.length === 0) {
+            console.error("Invalid block - missing or empty cubes array:", block);
+            return;
+        }
         
         // Create a new group for the current block mesh
         if (this.currentBlockMesh) {
@@ -471,7 +631,18 @@ class Renderer {
         // Add to scene
         this.scene.add(this.currentBlockMesh);
         
-        console.log("Added currentBlockMesh to scene:", this.currentBlockMesh);
+        console.log("Added currentBlockMesh to scene:", {
+            numChildren: this.currentBlockMesh.children.length
+        });
+        
+        // Initialize the last applied rotation to the block's current rotation
+        if (block) {
+            this.animationState.lastAppliedRotation.set(
+                block.rotation.x,
+                block.rotation.y,
+                block.rotation.z
+            );
+        }
     }
     
     // Update the position of the current block
@@ -485,6 +656,11 @@ class Renderer {
         if (!this.currentBlockMesh) {
             console.log("Creating block mesh first since it doesn't exist yet");
             this.setCurrentBlock(block);
+            return;
+        }
+        
+        // Skip if we're in the middle of an animation
+        if (this.animationState.rotating) {
             return;
         }
         
@@ -503,16 +679,125 @@ class Renderer {
             pos.z + 0.5  // Add 0.5 offset to match the fixed blocks
         );
         
-        // Apply block rotation
-        if (block.getRotationMatrix) {
-            const rotMatrix = block.getRotationMatrix();
-            if (rotMatrix) {
-                this.currentBlockMesh.rotation.setFromRotationMatrix(rotMatrix);
-            }
+        // ONLY animate rotations when deliberately initiated by the user
+        // This is the key part that prevents unwanted rotations
+        const isDeliberateRotation = this.game && this.game.isDeliberateRotation;
+        
+        if (isDeliberateRotation) {
+            // Start rotation animation for deliberate user rotations only
+            this._startRotationAnimation(block);
+            
+            // Update last applied rotation to prevent repeats
+            this.animationState.lastAppliedRotation.set(
+                block.rotation.x,
+                block.rotation.y,
+                block.rotation.z
+            );
         } else {
-            this.currentBlockMesh.rotation.x = block.rotation.x;
-            this.currentBlockMesh.rotation.y = block.rotation.y;
-            this.currentBlockMesh.rotation.z = block.rotation.z;
+            // Just update rotation directly without animation
+            // For any non-deliberate updates, including falling and position changes
+            if (block.getRotationMatrix) {
+                // Use rotation matrix if available (more accurate)
+                const rotMatrix = block.getRotationMatrix();
+                if (rotMatrix) {
+                    this.currentBlockMesh.quaternion.setFromRotationMatrix(rotMatrix);
+                }
+            } else {
+                // Direct rotation update
+                this.currentBlockMesh.rotation.set(
+                    block.rotation.x,
+                    block.rotation.y,
+                    block.rotation.z
+                );
+            }
+            
+            // Update last applied rotation to prevent future animations
+            this.animationState.lastAppliedRotation.set(
+                block.rotation.x,
+                block.rotation.y,
+                block.rotation.z
+            );
+        }
+    }
+    
+    // Start rotation animation for the current block
+    _startRotationAnimation(block) {
+        // Determine rotation axis and angle based on what changed
+        let axis = null, angle = 0;
+        
+        // Store the current rotation as the starting point
+        this.animationState.startRotation.copy(this.currentBlockMesh.rotation);
+        
+        // Save the target rotation
+        this.animationState.targetRotation.set(
+            block.rotation.x,
+            block.rotation.y,
+            block.rotation.z
+        );
+        
+        // Calculate the differences for each axis
+        const diffX = Math.abs(block.rotation.x - this.animationState.startRotation.x);
+        const diffY = Math.abs(block.rotation.y - this.animationState.startRotation.y);
+        const diffZ = Math.abs(block.rotation.z - this.animationState.startRotation.z);
+        
+        // Use a higher threshold to prevent tiny unintended rotations
+        const threshold = 0.1; // Radians (~5.7 degrees)
+        
+        // Only rotate on the axis with the largest change, if it exceeds the threshold
+        if (diffX > threshold && diffX >= diffY && diffX >= diffZ) {
+            axis = new THREE.Vector3(1, 0, 0);
+            angle = block.rotation.x - this.animationState.startRotation.x;
+            
+            // Reset other rotations to avoid compound rotations
+            this.animationState.targetRotation.y = this.animationState.startRotation.y;
+            this.animationState.targetRotation.z = this.animationState.startRotation.z;
+            
+        } else if (diffY > threshold && diffY >= diffX && diffY >= diffZ) {
+            axis = new THREE.Vector3(0, 1, 0);
+            angle = block.rotation.y - this.animationState.startRotation.y;
+            
+            // Reset other rotations
+            this.animationState.targetRotation.x = this.animationState.startRotation.x;
+            this.animationState.targetRotation.z = this.animationState.startRotation.z;
+            
+        } else if (diffZ > threshold && diffZ >= diffX && diffZ >= diffY) {
+            axis = new THREE.Vector3(0, 0, 1);
+            angle = block.rotation.z - this.animationState.startRotation.z;
+            
+            // Reset other rotations
+            this.animationState.targetRotation.x = this.animationState.startRotation.x;
+            this.animationState.targetRotation.y = this.animationState.startRotation.y;
+        } else {
+            // No significant rotation detected, skip animation
+            if (this.debug) console.log("No significant rotation detected, skipping animation");
+            return;
+        }
+        
+        // Check if angle is close to a standard 90-degree rotation (±small error margin)
+        const isStandardRotation = Math.abs(Math.abs(angle) - Math.PI/2) < 0.1;
+        
+        if (!isStandardRotation) {
+            if (this.debug) console.log("Non-standard rotation angle, adjusting to nearest 90°");
+            // Round to nearest 90 degrees (π/2 radians)
+            angle = Math.sign(angle) * Math.PI/2;
+        }
+        
+        // Set the animation state
+        this.animationState.rotating = true;
+        this.animationState.startTime = Date.now();
+        this.animationState.axis = axis;
+        this.animationState.angle = angle;
+        
+        if (this.debug) {
+            console.log("Starting rotation animation:", {
+                axis: axis ? `${axis.x},${axis.y},${axis.z}` : 'none',
+                angle: angle,
+                diffX: diffX,
+                diffY: diffY,
+                diffZ: diffZ,
+                from: `${this.animationState.startRotation.x}, ${this.animationState.startRotation.y}, ${this.animationState.startRotation.z}`,
+                to: `${this.animationState.targetRotation.x}, ${this.animationState.targetRotation.y}, ${this.animationState.targetRotation.z}`
+            });
         }
     }
     

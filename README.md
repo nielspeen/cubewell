@@ -25,7 +25,7 @@ Objective: Stack falling polycubes into a 3D pit to create complete layers, whic
 
 
 
-View: Players look down into a pit (e.g., a 5x5x10 grid of cubes).
+View: Players look down into a pit. The bottom should be 5x5. The pit should be 10 levels deep.
 
 
 

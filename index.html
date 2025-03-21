@@ -58,13 +58,20 @@
     <!-- Load libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
+    <!-- Polyfill for crypto.randomUUID -->
+    <script>
+    if (!crypto.randomUUID) {
+        crypto.randomUUID = function() {
+            // Simple UUID v4 implementation
+            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        };
+        console.log("Added polyfill for crypto.randomUUID");
+    }
+    </script>
+
     <!-- Load game scripts -->
-    <script type="module" src="js/audio.js"></script>
-    <script type="module" src="js/polycubes.js"></script>
-    <script type="module" src="js/pit.js"></script>
-    <script type="module" src="js/renderer.js"></script>
-    <script type="module" src="js/game.js"></script>
-    <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/main.js"></script>
 
     <style>

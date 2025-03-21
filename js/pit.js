@@ -231,6 +231,67 @@ class Pit {
         }
         this.grid = this._createEmptyGrid();
     }
+    
+    // Check if we have a position filled
+    isPositionFilled(x, y, z) {
+        // Check if the position is out of bounds
+        if (x < 0 || x >= this.width || y < 0 || y >= this.depth || z < 0 || z >= this.height) {
+            // Out of bounds is considered filled
+            return true;
+        }
+        
+        // Check if the position is filled
+        return this.grid[x][y][z] !== null;
+    }
+    
+    // Check if a block can be placed at its current position
+    isPositionValid(block) {
+        if (!block || !block.cubes) {
+            console.error("Invalid block provided to isPositionValid", block);
+            return false;
+        }
+        
+        // Get the world positions of each cube in the block
+        let positions = [];
+        
+        try {
+            if (typeof block.getWorldPositions === 'function') {
+                positions = block.getWorldPositions();
+            } else {
+                // Fallback for older blocks - manually calculate positions
+                positions = block.cubes.map(cube => {
+                    return {
+                        x: Math.round(cube.x + block.position.x),
+                        y: Math.round(cube.y + block.position.y),
+                        z: Math.round(cube.z + block.position.z)
+                    };
+                });
+            }
+        } catch (e) {
+            console.error("Error getting world positions:", e);
+            return false;
+        }
+        
+        // Check each position
+        for (const pos of positions) {
+            // Check if the position is out of bounds or filled
+            if (pos.x < 0 || pos.x >= this.width || 
+                pos.y < 0 || pos.y >= this.depth || 
+                pos.z < 0 || pos.z >= this.height) {
+                // Position is out of bounds
+                return false;
+            }
+            
+            // Check if the position is already filled
+            if (this.grid[pos.x][pos.y][pos.z] !== null) {
+                // Position is already filled
+                return false;
+            }
+        }
+        
+        // All positions are valid
+        return true;
+    }
 }
 
 export default Pit; 

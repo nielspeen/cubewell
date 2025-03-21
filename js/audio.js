@@ -12,6 +12,7 @@ const AudioManager = {
     musicGainNode: null,
     sfxGainNode: null,
     initialized: false,
+    musicPlaying: false,
     
     // Initialize the audio system
     init: function() {
@@ -48,10 +49,12 @@ const AudioManager = {
         const soundFiles = {
             rotate: 'sounds/rotate.mp3',
             move: 'sounds/move.mp3',
-            place: 'sounds/place.mp3',
-            line: 'sounds/line.mp3',
-            levelUp: 'sounds/level_up.mp3',
-            gameOver: 'sounds/game_over.mp3'
+            land: 'sounds/place.mp3',
+            clear: 'sounds/line.mp3',
+            levelup: 'sounds/level_up.mp3',
+            gameover: 'sounds/game_over.mp3',
+            spawn: 'sounds/move.mp3', // Reuse move sound for spawn
+            drop: 'sounds/place.mp3'  // Reuse place sound for drop
         };
         
         // Load each sound
@@ -65,13 +68,22 @@ const AudioManager = {
     
     // Load a sound
     loadSound: function(name, path) {
+        console.log(`Attempting to load sound: ${name} from ${path}`);
         fetch(path)
-            .then(response => response.arrayBuffer())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                console.log(`Sound ${name}: Fetch successful`);
+                return response.arrayBuffer();
+            })
             .then(buffer => {
-                this.context.decodeAudioData(buffer, decodedData => {
-                    this.sounds[name] = decodedData;
-                    console.log(`Loaded sound: ${name}`);
-                });
+                console.log(`Sound ${name}: Starting audio decoding`);
+                return this.context.decodeAudioData(buffer);
+            })
+            .then(decodedData => {
+                this.sounds[name] = decodedData;
+                console.log(`Sound ${name}: Successfully loaded and decoded`);
             })
             .catch(error => {
                 console.warn(`Error loading sound ${name}:`, error);
@@ -96,77 +108,140 @@ const AudioManager = {
             });
     },
     
-    // Play a sound
-    playSound: function(name) {
-        if (!this.initialized) return;
-        
-        const sound = this.sounds[name];
-        if (!sound) {
-            console.warn(`Sound "${name}" not found`);
+    // Play a sound effect
+    playSFX: function(name) {
+        if (!this.initialized || !this.sounds[name]) {
             return;
         }
         
         try {
-            // Create source
-            const source = this.context.createBufferSource();
-            source.buffer = sound;
+            // Resume the audio context if it's suspended
+            if (this.context.state === 'suspended') {
+                this.context.resume();
+            }
             
-            // Connect to gain node
+            // Create a buffer source for the sound
+            const source = this.context.createBufferSource();
+            source.buffer = this.sounds[name];
+            
+            // Connect to SFX gain node
             source.connect(this.sfxGainNode);
             
-            // Play sound
+            // Play the sound
             source.start(0);
+            console.log(`Playing sound: ${name}`);
         } catch (e) {
-            console.warn(`Error playing sound "${name}":`, e);
+            console.warn(`Error playing sound ${name}:`, e);
         }
     },
     
     // Play background music
     playMusic: function() {
-        if (!this.initialized || !this.music) return;
+        if (!this.initialized || !this.music) {
+            return;
+        }
         
         try {
-            // Create source
+            // Resume the audio context if it's suspended
+            if (this.context.state === 'suspended') {
+                this.context.resume();
+            }
+            
+            // Create a buffer source for the music
             const source = this.context.createBufferSource();
             source.buffer = this.music;
             
-            // Make it loop
-            source.loop = true;
-            
-            // Connect to gain node
+            // Connect to music gain node
             source.connect(this.musicGainNode);
             
-            // Play music
+            // Loop the music
+            source.loop = true;
+            
+            // Play the music
             source.start(0);
+            this.musicPlaying = true;
+            console.log('Playing music');
         } catch (e) {
             console.warn('Error playing music:', e);
         }
     },
     
-    // Set music volume
-    setMusicVolume: function(volume) {
-        if (this.musicGainNode) {
-            this.musicGainNode.gain.value = volume;
+    // Stop music
+    stopMusic: function() {
+        if (!this.initialized) {
+            return;
         }
+        
+        // Set gain to 0 to effectively stop all music
+        this.musicGainNode.gain.value = 0;
+        
+        // After a brief pause, restore the volume but keep music stopped
+        setTimeout(() => {
+            this.musicGainNode.gain.value = 0.5;
+            this.musicPlaying = false;
+        }, 100);
+        
+        console.log('Stopping music');
     },
     
-    // Set SFX volume
-    setSfxVolume: function(volume) {
-        if (this.sfxGainNode) {
-            this.sfxGainNode.gain.value = volume;
+    // Resume music if it was playing before
+    resumeMusic: function() {
+        if (!this.initialized || this.musicPlaying) {
+            return;
         }
+        
+        this.playMusic();
     },
     
     // Toggle music on/off
     toggleMusic: function() {
-        if (!this.musicGainNode) return false;
+        if (!this.initialized) {
+            return;
+        }
         
-        // Toggle between volume 0 and original volume
-        const isMuted = this.musicGainNode.gain.value === 0;
-        this.musicGainNode.gain.value = isMuted ? 0.5 : 0;
+        if (this.musicPlaying) {
+            this.stopMusic();
+        } else {
+            this.playMusic();
+        }
+    },
+    
+    // Set music volume (0-1)
+    setMusicVolume: function(volume) {
+        if (!this.initialized) {
+            return;
+        }
         
-        console.log(`Music ${isMuted ? 'enabled' : 'disabled'}`);
-        return isMuted;
+        this.musicGainNode.gain.value = Math.max(0, Math.min(1, volume));
+    },
+    
+    // Set SFX volume (0-1)
+    setSfxVolume: function(volume) {
+        if (!this.initialized) {
+            return;
+        }
+        
+        this.sfxGainNode.gain.value = Math.max(0, Math.min(1, volume));
+    },
+    
+    // Debug audio system status
+    debugStatus: function() {
+        console.log('Audio System Status:');
+        console.log(`- Initialized: ${this.initialized}`);
+        console.log(`- AudioContext: ${this.context ? this.context.state : 'None'}`);
+        console.log(`- Music Volume: ${this.musicGainNode ? this.musicGainNode.gain.value : 'N/A'}`);
+        console.log(`- SFX Volume: ${this.sfxGainNode ? this.sfxGainNode.gain.value : 'N/A'}`);
+        console.log(`- Loaded Sounds: ${Object.keys(this.sounds).join(', ') || 'None'}`);
+        console.log(`- Music Loaded: ${this.music ? 'Yes' : 'No'}`);
+        
+        return {
+            initialized: this.initialized,
+            contextState: this.context ? this.context.state : 'None',
+            musicVolume: this.musicGainNode ? this.musicGainNode.gain.value : 'N/A',
+            sfxVolume: this.sfxGainNode ? this.sfxGainNode.gain.value : 'N/A',
+            sounds: Object.keys(this.sounds),
+            musicLoaded: !!this.music
+        };
     },
     
     // Compatibility methods for older code
@@ -180,46 +255,37 @@ const AudioManager = {
     // Play movement sound
     playMove: function() {
         console.log("playMove called (compatibility method)");
-        this.playSound('move');
+        this.playSFX('move');
     },
     
     // Play rotation sound
     playRotate: function() {
         console.log("playRotate called (compatibility method)");
-        this.playSound('rotate');
+        this.playSFX('rotate');
     },
     
     // Play drop sound
     playDrop: function() {
         console.log("playDrop called (compatibility method)");
-        this.playSound('move');
+        this.playSFX('drop');
     },
     
     // Play block landing sound
     playLand: function() {
         console.log("playLand called (compatibility method)");
-        this.playSound('place');
+        this.playSFX('land');
     },
     
     // Play clear line sound
     playClear: function() {
         console.log("playClear called (compatibility method)");
-        this.playSound('line');
+        this.playSFX('clear');
     },
     
     // Play game over sound
     playGameOver: function() {
         console.log("playGameOver called (compatibility method)");
-        this.playSound('gameOver');
-    },
-    
-    // Stop background music
-    stopMusic: function() {
-        console.log("stopMusic called (compatibility method)");
-        if (this.musicGainNode) {
-            // Set volume to 0 to effectively stop music
-            this.musicGainNode.gain.value = 0;
-        }
+        this.playSFX('gameover');
     }
 };
 
