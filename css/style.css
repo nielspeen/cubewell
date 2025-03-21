@@ -1,0 +1,177 @@
+:root {
+    --primary-color: #00aaff;
+    --secondary-color: #ff00aa;
+    --bg-color: #111122;
+    --text-color: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+    touch-action: none;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#game-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#ui-overlay {
+    position: absolute;
+    top: clamp(10px, 2vh, 20px);
+    left: clamp(10px, 2vw, 20px);
+    z-index: 10;
+    font-size: clamp(0.9rem, 2.5vmin, 1.5rem);
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+}
+
+#score, #level {
+    margin-bottom: clamp(5px, 1vh, 10px);
+}
+
+#next-block {
+    margin-top: clamp(10px, 2vh, 20px);
+    width: clamp(80px, 15vmin, 120px);
+    height: clamp(80px, 15vmin, 120px);
+    border: 1px solid var(--primary-color);
+    text-align: center;
+    padding-top: 5px;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: clamp(15px, 3vmin, 30px);
+    text-align: center;
+    border-radius: 10px;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 15px var(--primary-color);
+    z-index: 20;
+    width: clamp(250px, 80vw, 400px);
+    font-size: clamp(0.9rem, 2.5vmin, 1.2rem);
+}
+
+#restart-btn {
+    margin-top: 15px;
+    padding: clamp(8px, 2vmin, 15px) clamp(15px, 4vmin, 25px);
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: clamp(0.9rem, 2vmin, 1.2rem);
+}
+
+#restart-btn:hover {
+    background-color: var(--secondary-color);
+}
+
+.hidden {
+    display: none !important;
+}
+
+#mobile-controls {
+    position: absolute;
+    bottom: clamp(10px, 4vh, 30px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.5vh, 15px);
+    z-index: 10;
+    width: clamp(250px, 95vw, 500px);
+}
+
+.control-row {
+    display: flex;
+    justify-content: center;
+    gap: clamp(5px, 1vw, 10px);
+}
+
+#mobile-controls button {
+    padding: clamp(10px, 2vmin, 20px);
+    background-color: rgba(0, 170, 255, 0.5);
+    color: white;
+    border: 1px solid var(--primary-color);
+    border-radius: 5px;
+    font-size: clamp(0.8rem, 2vmin, 1.2rem);
+    cursor: pointer;
+    touch-action: manipulation;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+#drop-btn, #pause-btn {
+    padding: clamp(12px, 2.5vmin, 18px);
+    background-color: rgba(255, 0, 170, 0.5);
+}
+
+/* Media query for mobile devices */
+@media (max-width: 768px) {
+    #mobile-controls {
+        display: flex;
+    }
+    
+    #ui-overlay {
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+        padding: 10px;
+    }
+    
+    /* Make next block preview smaller on very small screens */
+    @media (max-height: 500px) {
+        #next-block {
+            width: clamp(60px, 12vmin, 80px);
+            height: clamp(60px, 12vmin, 80px);
+        }
+    }
+}
+
+/* For very wide screens, ensure the camera doesn't get too far away */
+@media (min-aspect-ratio: 2/1) {
+    #game-container {
+        max-width: 100vw;
+    }
+}
+
+/* For very tall screens (like mobile portrait) */
+@media (max-aspect-ratio: 1/2) {
+    #ui-overlay {
+        top: 5px;
+        left: 5px;
+    }
+}
+
+/* Animations */
+@keyframes glow {
+    0% { box-shadow: 0 0 5px var(--primary-color); }
+    50% { box-shadow: 0 0 20px var(--primary-color); }
+    100% { box-shadow: 0 0 5px var(--primary-color); }
+} 

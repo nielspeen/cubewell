@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CubeWell - 3D Puzzle Game</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
+    
+    <!-- Load Three.js in the head to ensure it's loaded before game scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+</head>
+<body>
+    <!-- Game music (hidden, plays automatically) -->
+    <audio id="game-music" loop autoplay style="display:none">
+        <source src="assets/music/game-music.mp3" type="audio/mpeg">
+        <source src="assets/music/alt-music.mp3" type="audio/mpeg">
+    </audio>
+    
+    <div id="game-container">
+        <div id="game-canvas"></div>
+        <div id="ui-overlay">
+            <div id="score">Score: <span id="score-value">0</span></div>
+            <div id="level">Level: <span id="level-value">1</span></div>
+            <div id="next-block">Next</div>
+            <div id="game-over" class="hidden">
+                <h2>Game Over</h2>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <button id="restart-btn">Restart</button>
+            </div>
+        </div>
+        <div id="mobile-controls" class="hidden">
+            <div class="control-row">
+                <button id="rotate-x">Rotate X</button>
+                <button id="rotate-y">Rotate Y</button>
+                <button id="rotate-z">Rotate Z</button>
+            </div>
+            <div class="control-row">
+                <button id="move-left">←</button>
+                <button id="move-forward">↑</button>
+                <button id="move-backward">↓</button>
+                <button id="move-right">→</button>
+            </div>
+            <div class="control-row">
+                <button id="drop-btn">Drop</button>
+                <button id="pause-btn">Pause/Resume</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/polycubes.js"></script>
+    <script src="js/pit.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/multiplayer.js"></script>
+    <script src="js/main.js"></script>
+    
+    <!-- Simple audio enabler -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const music = document.getElementById('game-music');
+        music.volume = 0.3;
+        
+        // Many browsers require user interaction to play audio
+        const enableAudio = function() {
+            music.play().catch(e => console.log('Music playback blocked by browser'));
+            // Only try once per action
+            document.removeEventListener('click', enableAudio);
+            document.removeEventListener('keydown', enableAudio);
+        };
+        
+        // Try to play immediately
+        music.play();
+        
+        // Also try on first user interaction (for browsers with autoplay blocking)
+        document.addEventListener('click', enableAudio);
+        document.addEventListener('keydown', enableAudio);
+    });
+    </script>
+</body>
+</html> 
