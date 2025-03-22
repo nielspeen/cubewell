@@ -10,6 +10,7 @@ class Game {
         this.isPaused = true;
         this.isGameOver = false;
         this.layersCleared = 0; // Track layers cleared for sound effects
+        this.displacementTracking = { x: 0, y: 0, z: 0 }; // Track displacement during rotations
         
         // Create Three.js scene
         this.setupScene();
@@ -20,7 +21,7 @@ class Game {
             CONFIG.PIT_DEPTH,
             CONFIG.PIT_HEIGHT
         );
-        this.scene.add(this.pit.mesh);
+        this.gameContainer.add(this.pit.mesh);
         
         // Create polycube generator
         this.polycubeGenerator = new PolycubeGenerator();
@@ -67,6 +68,11 @@ class Game {
         
         this.camera.position.set(centerX, centerY, cameraHeight);
         this.camera.lookAt(centerX, centerY, 0); // Look straight down to the bottom
+        
+        // Create a container for the pit and all game elements
+        // This will help us center everything in the scene
+        this.gameContainer = new THREE.Group();
+        this.scene.add(this.gameContainer);
         
         // Renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -130,66 +136,53 @@ class Game {
      * Adjust camera parameters based on window size to keep pit fully visible
      */
     adjustCameraForWindowSize() {
-        const centerX = CONFIG.PIT_WIDTH / 2;
-        const centerY = CONFIG.PIT_DEPTH / 2;
-        
         // Get pit dimensions
         const pitWidth = CONFIG.PIT_WIDTH;
         const pitDepth = CONFIG.PIT_DEPTH;
         const pitHeight = CONFIG.PIT_HEIGHT;
         
-        // Calculate aspect ratio
+        // Get center of pit
+        const centerX = pitWidth / 2;
+        const centerY = pitDepth / 2;
+        
+        // Get window dimensions and aspect ratio
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
         const windowAspect = windowWidth / windowHeight;
+                
+        // Choose FOV - slightly wider FOV gives better perspective
+        this.camera.fov = 50;
+        const fovRadians = this.camera.fov * Math.PI / 180;
+        const tanHalfFov = Math.tan(fovRadians / 2);
         
-        // Get the target size that the pit should appear (inversely related to window size)
-        const baseHeight = 7; // Base camera height for a medium-sized window
+        // Calculate the distance needed to fit pit width into available width
+        // This formula derives the distance where an object of width W will appear
+        // to have width W' on screen at a given FOV
+        const distanceForWidth = (pitWidth / 2) / (tanHalfFov * windowAspect);
         
-        // Calculate an inverse scale factor - smaller for larger windows
-        // This makes the pit appear larger when the window is larger
-        let scaleFactor;
+        // Calculate the distance needed to fit pit depth into available height
+        const distanceForDepth = (pitDepth / 2) / tanHalfFov;
         
-        if (windowAspect < 1) {
-            // Portrait mode
-            // Use window height as primary factor but account for width too
-            const referenceHeight = 800; // Reference height for medium window
-            scaleFactor = Math.pow(referenceHeight / windowHeight, 0.4) * Math.pow(windowAspect, 0.1);
-            
-            // Adjust FOV for portrait - wider FOV for narrow screens
-            let portraitFOV = 65;
-            if (windowAspect < 0.6) {
-                portraitFOV += (0.6 - windowAspect) * 10;
-            }
-            this.camera.fov = Math.min(80, Math.max(55, portraitFOV));
-        } else {
-            // Landscape mode
-            // Use window width as primary factor but account for height too
-            const referenceWidth = 1200; // Reference width for medium window
-            scaleFactor = Math.pow(referenceWidth / windowWidth, 0.4) * Math.pow(1/windowAspect, 0.1);
-            
-            // Standard FOV for landscape
-            this.camera.fov = 60;
-        }
+        // Use the larger distance to ensure both dimensions fit
+        let cameraZ = Math.max(distanceForWidth, distanceForDepth);
         
-        // Adjust camera height based on scale factor
-        // The smaller the scale factor (larger window), the lower the camera height
-        const cameraHeight = baseHeight * Math.max(0.9, Math.min(1.8, scaleFactor));
+        // Add a minimal buffer to ensure the bottom of the pit is visible
+        // This is much less than before - just enough to see bottom layer
+        cameraZ += pitHeight * 0.95;
         
-        // Update camera position
-        this.camera.position.set(centerX, centerY, pitHeight * cameraHeight / 5);
+        // Apply a slight offset for perspective but keep it small
+        const offsetX = -pitWidth * 0.05;
+        const offsetY = -pitDepth * 0.05;
         
-        // Look at the center of the pit
+        // Position the camera
+        this.camera.position.set(centerX + offsetX, centerY + offsetY, cameraZ);
+        
+        // Look at bottom center of pit for better view of all layers
         this.camera.lookAt(centerX, centerY, 0);
         
-        // Fine-tune for very small or very large screens
-        if (Math.min(windowWidth, windowHeight) < 400) {
-            // For very small screens, move the camera back slightly
-            this.camera.position.z *= 1.2;
-        } else if (Math.max(windowWidth, windowHeight) > 1600) {
-            // For very large screens, move the camera closer
-            this.camera.position.z *= 0.9;
-        }
+        // Update projection matrix
+        this.camera.aspect = windowAspect;
+        this.camera.updateProjectionMatrix();
     }
     
     /**
@@ -507,6 +500,7 @@ class Game {
         if (anim.elapsed >= anim.duration) {
             // Animation complete
             this.currentBlock.rotation.copy(anim.targetRotation);
+            this.currentBlock.position = [...anim.targetPosition];
             this.currentBlock.updateMesh();
             this.rotationAnimation = null;
             
@@ -516,12 +510,20 @@ class Game {
             // Animation in progress
             const progress = anim.elapsed / anim.duration;
             
-            // Use correct way to perform slerp in Three.js
+            // Use correct way to perform slerp in Three.js for rotation
             this.currentBlock.rotation.slerpQuaternions(
                 anim.startRotation,
                 anim.targetRotation,
                 progress
             );
+            
+            // Interpolate position for wall kick
+            const easedProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+            this.currentBlock.position = [
+                anim.startPosition[0] + (anim.targetPosition[0] - anim.startPosition[0]) * easedProgress,
+                anim.startPosition[1] + (anim.targetPosition[1] - anim.startPosition[1]) * easedProgress,
+                anim.startPosition[2] + (anim.targetPosition[2] - anim.startPosition[2]) * easedProgress
+            ];
             
             this.currentBlock.updateMesh();
         }
@@ -635,7 +637,7 @@ class Game {
         }
         
         // Only add the mesh to the scene after everything else is ready
-        this.scene.add(blockMesh);
+        this.gameContainer.add(blockMesh);
         
         // Set the next block
         this.nextBlock = nextBlockTemp;
@@ -656,8 +658,8 @@ class Game {
         // Place the block in the pit
         this.pit.placePolycube(this.currentBlock);
         
-        // Remove the block's mesh from the scene
-        this.scene.remove(this.currentBlock.mesh);
+        // Remove the block's mesh from the game container
+        this.gameContainer.remove(this.currentBlock.mesh);
         
         // Clear position highlighting
         this.pit.highlightPosition(null);
@@ -713,7 +715,7 @@ class Game {
         
         // Create explosion particles
         const particles = new THREE.Group();
-        this.scene.add(particles);
+        this.gameContainer.add(particles);
         
         // Create 100 particles
         for (let i = 0; i < 100; i++) {
@@ -811,7 +813,7 @@ class Game {
                 requestAnimationFrame(animateExplosion);
             } else {
                 // Remove particles when animation completes
-                this.scene.remove(particles);
+                this.gameContainer.remove(particles);
             }
         };
         
@@ -1041,8 +1043,9 @@ class Game {
     rotateBlock(axis, angle) {
         if (!this.currentBlock || this.isPaused || this.rotationAnimation) return;
         
-        // Store original rotation
+        // Store original rotation and position
         const originalRotation = this.currentBlock.rotation.clone();
+        const originalPosition = [...this.currentBlock.position];
         
         // Create a quaternion for the target rotation
         const q = new THREE.Quaternion();
@@ -1051,25 +1054,59 @@ class Game {
         // Calculate target rotation
         const targetRotation = originalRotation.clone().multiply(q);
         
-        // Temporarily apply rotation to check for collisions
-        this.currentBlock.rotation.copy(targetRotation);
+        // Try different positions for wall kick
+        const kickOffsets = [
+            [0, 0, 0],  // Original position
+            [1, 0, 0],  // Right
+            [-1, 0, 0], // Left
+            [0, 1, 0],  // Forward
+            [0, -1, 0], // Backward
+            [1, 1, 0],  // Right + Forward
+            [-1, 1, 0], // Left + Forward
+            [1, -1, 0], // Right + Backward
+            [-1, -1, 0] // Left + Backward
+        ];
         
-        // Check if valid position
-        if (!this.pit.canPlacePolycube(this.currentBlock)) {
-            // Revert if invalid
+        let validPosition = null;
+        
+        // Try each position
+        for (const offset of kickOffsets) {
+            // Apply rotation
+            this.currentBlock.rotation.copy(targetRotation);
+            
+            // Try offset position
+            this.currentBlock.position = [
+                originalPosition[0] + offset[0],
+                originalPosition[1] + offset[1],
+                originalPosition[2] + offset[2]
+            ];
+            
+            // Check if valid position
+            if (this.pit.canPlacePolycube(this.currentBlock)) {
+                validPosition = [...this.currentBlock.position];
+                break;
+            }
+        }
+        
+        // If no valid position found, revert and return false
+        if (!validPosition) {
             this.currentBlock.rotation.copy(originalRotation);
+            this.currentBlock.position = originalPosition;
             this.currentBlock.updateMesh();
             return false;
         }
         
-        // Revert to original rotation for animation
+        // Revert to original rotation and position for animation
         this.currentBlock.rotation.copy(originalRotation);
+        this.currentBlock.position = originalPosition;
         this.currentBlock.updateMesh();
         
         // Create rotation animation
         this.rotationAnimation = {
             startRotation: originalRotation,
             targetRotation: targetRotation,
+            startPosition: originalPosition,
+            targetPosition: validPosition,
             duration: 0.15, // Animation duration in seconds
             elapsed: 0,
             wasPaused: this.isPaused
@@ -1193,9 +1230,9 @@ class Game {
         // Reset pit
         this.pit.reset();
         
-        // Clear scene of current block
+        // Clear game container of current block
         if (this.currentBlock && this.currentBlock.mesh) {
-            this.scene.remove(this.currentBlock.mesh);
+            this.gameContainer.remove(this.currentBlock.mesh);
         }
         
         // Reset polycube generator
