@@ -46,6 +46,9 @@ class Game {
         
         // Create pause message element (hidden initially)
         this.createPauseMessage();
+        
+        // Create background
+        this.background = new DynamicBackground(this.scene);
     }
     
     /**
@@ -453,25 +456,30 @@ class Game {
     /**
      * Animation loop
      */
-    animate(time) {
-        requestAnimationFrame((t) => this.animate(t));
-        
+    animate(currentTime) {
         // Calculate delta time
-        const deltaTime = (time - this.lastFrameTime) / 1000; // in seconds
-        this.lastFrameTime = time;
+        const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+        this.lastFrameTime = currentTime;
+        
+        // Always update background, regardless of game state
+        if (this.background) {
+            this.background.update(deltaTime);
+        }
         
         // Handle rotation animation even if paused
         if (this.rotationAnimation) {
             this.updateRotationAnimation(deltaTime);
             this.renderer.render(this.scene, this.camera);
-            return; // Skip further rendering while rotating
+            requestAnimationFrame((time) => this.animate(time));
+            return;
         }
         
         // Handle drop animation even if paused
         if (this.dropAnimation) {
             this.updateDropAnimation(deltaTime);
             this.renderer.render(this.scene, this.camera);
-            return; // Skip further rendering while dropping
+            requestAnimationFrame((time) => this.animate(time));
+            return;
         }
         
         // Don't update if paused or delta time is too large (tab was inactive)
@@ -480,6 +488,7 @@ class Game {
             if (this.currentBlock && this.currentBlock.mesh) {
                 this.renderer.render(this.scene, this.camera);
             }
+            requestAnimationFrame((time) => this.animate(time));
             return;
         }
         
@@ -488,6 +497,9 @@ class Game {
         
         // Render scene
         this.renderer.render(this.scene, this.camera);
+        
+        // Request next frame
+        requestAnimationFrame((time) => this.animate(time));
     }
     
     /**
@@ -1339,6 +1351,7 @@ class Game {
      */
     pause() {
         this.isPaused = true;
+        this.background.setActive(false); // Deactivate background when game is paused
         
         // Show pause message if the game has started and welcome message is gone
         // and the game is not over
@@ -1357,6 +1370,7 @@ class Game {
         if (this.isGameOver) return;
         
         this.isPaused = false;
+        this.background.setActive(true); // Reactivate background when game resumes
         this.lastFrameTime = performance.now();
         
         // Hide pause message
@@ -1366,5 +1380,30 @@ class Game {
         if (this.audioContext.state === 'suspended') {
             this.audioContext.resume();
         }
+    }
+    
+    startGame() {
+        this.score = 0;
+        this.level = 1;
+        this.fallSpeed = CONFIG.INITIAL_FALL_SPEED;
+        this.isGameOver = false;
+        this.isPaused = false;
+        this.pit.clear();
+        this.spawnBlock();
+        this.updateScore();
+        this.updateLevel();
+        this.background.setActive(true); // Activate background when game starts
+    }
+    
+    pauseGame() {
+        this.paused = true;
+        this.background.setActive(false); // Deactivate background when game is paused
+        this.pauseMessage.style.display = 'block';
+    }
+    
+    resumeGame() {
+        this.paused = false;
+        this.background.setActive(true); // Reactivate background when game resumes
+        this.pauseMessage.style.display = 'none';
     }
 } 
