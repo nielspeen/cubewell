@@ -289,8 +289,8 @@ class Game {
             // Filter for retro sound
             const filter = context.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.frequency.value = 2000;
-            filter.Q.value = 5;
+            filter.frequency.value = 2500; // Slightly higher frequency for more clarity
+            filter.Q.value = 6; // Slightly higher Q for more resonance
             filter.connect(compressor);
             
             // Create multiple oscillators for richer sound
@@ -310,9 +310,9 @@ class Game {
                 // Schedule parameter changes
                 oscillator.start(startTime);
                 
-                // Volume envelope
+                // Volume envelope with faster attack
                 gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(volumeStart, startTime + 0.02);
+                gain.gain.linearRampToValueAtTime(volumeStart, startTime + 0.01);
                 
                 // Frequency sweep
                 if (freqEnd !== freqStart) {
@@ -328,22 +328,22 @@ class Game {
                 return { oscillator, gain };
             };
             
-            // Create the main ascending arpeggio
-            const baseFreq = 220;
-            const notes = [1, 1.25, 1.5, 2, 2.5, 3];
+            // Create the main ascending arpeggio with higher base frequency
+            const baseFreq = 330; // Higher base frequency for more excitement
+            const notes = [1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4]; // Added more notes
             notes.forEach((ratio, index) => {
-                const delay = index * 0.07;
-                createTone('sawtooth', baseFreq * ratio, baseFreq * ratio * 1.01, 0.3, delay, 0.3);
+                const delay = index * 0.05; // Faster timing
+                createTone('sawtooth', baseFreq * ratio, baseFreq * ratio * 1.02, 0.25, delay, 0.35);
             });
             
             // Add a sweep at the end for emphasis
-            createTone('sine', baseFreq * 3, baseFreq * 6, 0.4, 0.35, 0.4);
+            createTone('sine', baseFreq * 4, baseFreq * 8, 0.35, 0.3, 0.45);
             
             // Create additional harmonized notes
-            createTone('square', baseFreq * 2, baseFreq * 4, 0.5, 0.2, 0.15);
+            createTone('square', baseFreq * 2, baseFreq * 4, 0.4, 0.15, 0.2);
             
-            // Add a low frequency bass note
-            createTone('triangle', baseFreq / 2, baseFreq / 2, 0.6, 0, 0.5);
+            // Add a low frequency bass note with more presence
+            createTone('triangle', baseFreq / 2, baseFreq / 2, 0.5, 0, 0.6);
             
             // Add a noise burst for explosion effect
             (() => {
@@ -361,25 +361,25 @@ class Game {
                 const noiseGain = context.createGain();
                 noiseGain.gain.value = 0;
                 
-                // Bandpass filter for noise
+                // Bandpass filter for noise with higher frequency
                 const noiseFilter = context.createBiquadFilter();
                 noiseFilter.type = 'bandpass';
-                noiseFilter.frequency.value = 1000;
-                noiseFilter.Q.value = 1;
+                noiseFilter.frequency.value = 1500;
+                noiseFilter.Q.value = 1.5;
                 
                 noise.connect(noiseFilter);
                 noiseFilter.connect(noiseGain);
                 noiseGain.connect(filter);
                 
-                const startTime = context.currentTime + 0.3;
+                const startTime = context.currentTime + 0.25;
                 noise.start(startTime);
                 
-                // Short noise burst
+                // Short noise burst with faster attack
                 noiseGain.gain.setValueAtTime(0, startTime);
-                noiseGain.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
-                noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+                noiseGain.gain.linearRampToValueAtTime(0.25, startTime + 0.03);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
                 
-                noise.stop(startTime + 0.35);
+                noise.stop(startTime + 0.3);
             })();
             
             // Add special case for multi-layer clears
@@ -387,17 +387,17 @@ class Game {
                 // Add an extra "bonus" sound for multi-layer clears
                 setTimeout(() => {
                     // Higher pitched celebratory sound
-                    const bonusFreq = baseFreq * 2;
+                    const bonusFreq = baseFreq * 2.5;
                     
-                    // Create descending arpeggio
-                    [3, 2.5, 2, 1.5, 1.25, 1].forEach((ratio, index) => {
-                        const delay = index * 0.06;
-                        createTone('square', bonusFreq * ratio, bonusFreq * ratio, 0.25, delay + 0.4, 0.25);
+                    // Create descending arpeggio with more notes
+                    [4, 3.5, 3, 2.5, 2, 1.5, 1.25, 1].forEach((ratio, index) => {
+                        const delay = index * 0.05;
+                        createTone('square', bonusFreq * ratio, bonusFreq * ratio, 0.2, delay + 0.35, 0.3);
                     });
                     
-                    // Add final chord
-                    [1, 1.25, 1.5, 2].forEach(ratio => {
-                        createTone('sine', bonusFreq * ratio, bonusFreq * ratio, 0.5, 0.7, 0.2);
+                    // Add final chord with more harmonics
+                    [1, 1.25, 1.5, 2, 2.5, 3].forEach(ratio => {
+                        createTone('sine', bonusFreq * ratio, bonusFreq * ratio, 0.4, 0.6, 0.25);
                     });
                 }, 10);
             }
