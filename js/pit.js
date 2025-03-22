@@ -592,6 +592,9 @@ class Pit {
                 
                 // Enhanced particle effects
                 if (particles) {
+                    // Create a list of particles to remove
+                    const particlesToRemove = [];
+                    
                     for (let i = 0; i < particles.children.length; i++) {
                         const particle = particles.children[i];
                         const velocity = particle.userData.velocity;
@@ -621,11 +624,15 @@ class Pit {
                         const pulse = 0.2 * Math.sin(particleProgress * 10);
                         particle.material.opacity = fade + pulse;
                         
-                        // Remove particles that have completed their lifespan
+                        // Mark particles for removal if they've completed their lifespan
                         if (particleProgress >= 1) {
-                            particles.remove(particle);
-                            i--;
+                            particlesToRemove.push(particle);
                         }
+                    }
+                    
+                    // Remove marked particles after iteration
+                    for (const particle of particlesToRemove) {
+                        particles.remove(particle);
                     }
                 }
                 
