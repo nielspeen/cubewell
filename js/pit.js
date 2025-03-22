@@ -370,13 +370,26 @@ class Pit {
                     const color = this.grid[x][y][z];
                     
                     if (color !== null) {
-                        // Reuse material if same color
+                        // Create or reuse material with darker bottom face
                         if (!materials[color]) {
                             materials[color] = new THREE.MeshLambertMaterial({
                                 color: color,
-                                emissive: new THREE.Color(color).multiplyScalar(0.2), // Add self-illumination
                                 transparent: true,
-                                opacity: 0.95
+                                opacity: 0.7,
+                                side: THREE.DoubleSide,
+                                // Create a custom shader for the bottom face
+                                onBeforeCompile: (shader) => {
+                                    shader.fragmentShader = shader.fragmentShader.replace(
+                                        'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
+                                        `
+                                        if (vNormal.y < -0.9) { // Bottom face
+                                            gl_FragColor = vec4(outgoingLight * 0.5, diffuseColor.a);
+                                        } else {
+                                            gl_FragColor = vec4(outgoingLight, diffuseColor.a);
+                                        }
+                                        `
+                                    );
+                                }
                             });
                         }
                         
