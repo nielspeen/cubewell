@@ -53,7 +53,6 @@ body {
     margin-top: clamp(10px, 2vh, 20px);
     width: clamp(80px, 15vmin, 120px);
     height: clamp(80px, 15vmin, 120px);
-    border: 1px solid var(--primary-color);
     text-align: center;
     padding-top: 5px;
     background-color: rgba(0, 0, 0, 0.5);
