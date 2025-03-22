@@ -166,6 +166,27 @@ class Pit {
             const line = new THREE.Line(geometry, material);
             this.gridLines.add(line);
         }
+
+        // Add grid lines to the bottom of the pit
+        // Horizontal lines (along x-axis)
+        for (let x = 0; x <= this.width; x++) {
+            const geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(x - 0.5, -0.5, -0.5),
+                new THREE.Vector3(x - 0.5, this.depth - 0.5, -0.5)
+            ]);
+            const line = new THREE.Line(geometry, material);
+            this.gridLines.add(line);
+        }
+
+        // Vertical lines (along y-axis)
+        for (let y = 0; y <= this.depth; y++) {
+            const geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-0.5, y - 0.5, -0.5),
+                new THREE.Vector3(this.width - 0.5, y - 0.5, -0.5)
+            ]);
+            const line = new THREE.Line(geometry, material);
+            this.gridLines.add(line);
+        }
     }
     
     /**
