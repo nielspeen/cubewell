@@ -109,21 +109,43 @@ class Polycube {
  */
 class PolycubeGenerator {
     constructor() {
-        // Define all possible shapes
+        // Define all possible shapes with their specific colors
         this.shapes = {
-            I3: { blocks: [[0, 0, 0], [1, 0, 0], [2, 0, 0]] },                 // I-shape (3 blocks)
-            I4: { blocks: [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]] },      // I-shape (4 blocks)
-            L3: { blocks: [[0, 0, 0], [1, 0, 0], [1, 1, 0]] },                 // L-shape (3 blocks)
-            T3: { blocks: [[0, 0, 0], [1, 0, 0], [2, 0, 0], [1, 1, 0]] },      // T-shape
-            Cube2: { blocks: [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]] },   // 2x2 square
-            Cube8: {                                                            // 2x2x2 cube
+            I3: { 
+                blocks: [[0, 0, 0], [1, 0, 0], [2, 0, 0]],  // I-shape (3 blocks)
+                color: CONFIG.BLOCK_COLORS[0]  // Charizard Red
+            },
+            I4: { 
+                blocks: [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]],  // I-shape (4 blocks)
+                color: CONFIG.BLOCK_COLORS[1]  // Bulbasaur Green
+            },
+            L3: { 
+                blocks: [[0, 0, 0], [1, 0, 0], [1, 1, 0]],  // L-shape (3 blocks)
+                color: CONFIG.BLOCK_COLORS[2]  // Squirtle Blue
+            },
+            T3: { 
+                blocks: [[0, 0, 0], [1, 0, 0], [2, 0, 0], [1, 1, 0]],  // T-shape
+                color: CONFIG.BLOCK_COLORS[3]  // Pikachu Yellow
+            },
+            Cube2: { 
+                blocks: [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]],  // 2x2 square
+                color: CONFIG.BLOCK_COLORS[4]  // Mewtwo Purple
+            },
+            Cube8: {  // 2x2x2 cube
                 blocks: [
                     [0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0],
                     [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]
-                ]
+                ],
+                color: CONFIG.BLOCK_COLORS[5]  // Lapras Cyan
             },
-            Z3: { blocks: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [2, 0, 1]] },      // Z-shape in 3D
-            Corner3: { blocks: [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]] }, // 3D corner
+            Z3: { 
+                blocks: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [2, 0, 1]],  // Z-shape in 3D
+                color: CONFIG.BLOCK_COLORS[6]  // Charmander Orange
+            },
+            Corner3: { 
+                blocks: [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]],  // 3D corner
+                color: CONFIG.BLOCK_COLORS[7]  // Gengar Purple
+            }
         };
         
         // Initially available shapes (simpler ones for early game)
@@ -179,11 +201,7 @@ class PolycubeGenerator {
         const shapeKey = this.bag.splice(index, 1)[0];
         const shape = this.shapes[shapeKey];
         
-        // Select a random color
-        const colorIndex = Math.floor(Math.random() * CONFIG.BLOCK_COLORS.length);
-        const color = CONFIG.BLOCK_COLORS[colorIndex];
-        
-        // Create new polycube
-        return new Polycube(shape.blocks, color);
+        // Create new polycube with the shape's specific color
+        return new Polycube(shape.blocks, shape.color);
     }
 } 
