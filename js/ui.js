@@ -53,15 +53,16 @@ class UI {
      * Update the next block preview
      */
     updateNextBlockPreview(nextBlock) {
-        // Clear existing preview
-        while (this.previewScene.children.length > 0) {
-            const obj = this.previewScene.children[0];
-            if (obj.type === 'Mesh' || obj.type === 'Group') {
-                this.previewScene.remove(obj);
-            } else if (obj.type === 'DirectionalLight' || obj.type === 'AmbientLight') {
-                // Keep lights
-                break;
-            }
+        // Cancel any existing animation
+        if (this.previewAnimation) {
+            cancelAnimationFrame(this.previewAnimation);
+            this.previewAnimation = null;
+        }
+        
+        // Remove existing preview mesh if it exists
+        if (this.previewMesh) {
+            this.previewScene.remove(this.previewMesh);
+            this.previewMesh = null;
         }
         
         if (nextBlock) {
@@ -72,31 +73,31 @@ class UI {
             previewBlock.position = [0, 0, 0];
             
             // Create the mesh but don't add to main scene
-            const mesh = previewBlock.createMesh();
+            this.previewMesh = previewBlock.createMesh();
             
             // Ensure the mesh is properly positioned before adding to the preview scene
-            mesh.visible = false;
+            this.previewMesh.visible = false;
             
             // Center the block in view
-            const bbox = new THREE.Box3().setFromObject(mesh);
+            const bbox = new THREE.Box3().setFromObject(this.previewMesh);
             const center = bbox.getCenter(new THREE.Vector3());
-            mesh.position.sub(center);
+            this.previewMesh.position.sub(center);
             
             // Add to preview scene
-            this.previewScene.add(mesh);
+            this.previewScene.add(this.previewMesh);
             
             // Make visible
-            mesh.visible = true;
+            this.previewMesh.visible = true;
             
             // Animate rotation
-            this.previewAnimation = (time) => {
-                mesh.rotation.y = time / 2000;
-                mesh.rotation.x = time / 3000;
+            const animate = (time) => {
+                this.previewMesh.rotation.y = time / 2000;
+                this.previewMesh.rotation.x = time / 3000;
                 this.previewRenderer.render(this.previewScene, this.previewCamera);
-                requestAnimationFrame(this.previewAnimation);
+                this.previewAnimation = requestAnimationFrame(animate);
             };
             
-            requestAnimationFrame(this.previewAnimation);
+            this.previewAnimation = requestAnimationFrame(animate);
         }
     }
     
