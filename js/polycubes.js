@@ -15,21 +15,22 @@ class Polycube {
      */
     createMesh() {
         const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
-        const glowGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0); // Slightly larger for glow
+        const glowGeometry = new THREE.BoxGeometry(1.1, 1.1, 1.1); // Much larger for soft glow
         
         // Create main material for the cube faces
         const material = new THREE.MeshLambertMaterial({ 
             color: this.color,
             transparent: true,
-            opacity: 0.95
+            opacity: 0.7, // More translucent for glassy effect
+            side: THREE.DoubleSide // Render both sides for better transparency
         });
         
-        // Create bright edge material that's unaffected by lighting
+        // Create soft glowing material
         const glowMaterial = new THREE.MeshBasicMaterial({ 
-            color: new THREE.Color(this.color).multiplyScalar(3.0), // Make it 3x brighter than the cube
+            color: 0xffffff, // Pure white
             transparent: true,
-            opacity: 0.8, // More opaque
-            side: THREE.BackSide // Only render the back faces for glow effect
+            opacity: 0.15, // Very transparent for soft effect
+            side: THREE.BackSide
         });
         
         this.mesh = new THREE.Group();
@@ -43,7 +44,7 @@ class Polycube {
             cube.position.set(x, y, z);
             this.mesh.add(cube);
             
-            // Add bright glowing outer cube
+            // Add soft glowing edges
             const glow = new THREE.Mesh(glowGeometry, glowMaterial);
             glow.position.set(x, y, z);
             this.mesh.add(glow);
