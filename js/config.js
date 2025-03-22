@@ -20,12 +20,16 @@ const CONFIG = {
     // Colors
     PIT_COLOR: 0x00aaff,     // Neon blue for pit wireframe
     BLOCK_COLORS: [
-        0xff0088, // Pink
-        0x00ff88, // Cyan
-        0xff8800, // Orange
-        0xffff00, // Yellow
-        0x8800ff, // Purple
-        0x00ff00, // Green
+        0xff0000, // Charizard Red - Vibrant red
+        0x00ff00, // Bulbasaur Green - Bright green
+        0x0000ff, // Squirtle Blue - Pure blue
+        0xffd700, // Pikachu Yellow - Bright gold
+        0xff00ff, // Mewtwo Purple - Magenta
+        0x00ffff, // Lapras Cyan - Bright cyan
+        0xff4500, // Charmander Orange - Orange-red
+        0x9400d3, // Gengar Purple - Deep purple
+        0x32cd32, // Ivysaur Green - Lime green
+        0x4169e1, // Gyarados Blue - Royal blue
     ],
     
     // Multiplayer

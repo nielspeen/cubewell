@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p>Controls:<br>
                Arrow keys: Move block<br>
                Q/W/E: Rotate around X/Y/Z axis<br>
+               A/S/D: Rotate around X/Y/Z axis (inverse)<br>
                Space: Drop block / Start game<br>
                P: Pause/Resume game</p>
             <p>Press SPACE to start</p>
