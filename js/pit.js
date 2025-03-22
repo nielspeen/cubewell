@@ -46,28 +46,8 @@ class Pit {
      * Create the visual representation of the pit
      */
     createPitMesh() {
-        // Create wireframe for pit boundaries
-        const geometry = new THREE.BoxGeometry(
-            this.width, 
-            this.depth, 
-            this.height
-        );
-        
-        // Adjust position to center the bottom at origin
-        geometry.translate(
-            (this.width - 1) / 2,
-            (this.depth - 1) / 2,
-            (this.height - 1) / 2
-        );
-        
-        const edges = new THREE.EdgesGeometry(geometry);
-        const material = new THREE.LineBasicMaterial({ 
-            color: CONFIG.PIT_COLOR,
-            linewidth: 2
-        });
-        
-        const wireframe = new THREE.LineSegments(edges, material);
-        this.mesh.add(wireframe);
+        // We no longer create a wireframe for the pit boundaries
+        // The grid lines will provide the visual structure
     }
     
     /**
