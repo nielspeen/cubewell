@@ -9,7 +9,7 @@ const CONFIG = {
     
     // Game settings
     INITIAL_FALL_SPEED: 1.0, // Units per second
-    LEVEL_UP_SCORE: 500,     // Score threshold for increasing level
+    LEVEL_UP_SCORE: 300,     // Score threshold for increasing level
     SPEED_INCREASE: 0.2,     // How much to increase speed per level
     MAX_FALL_SPEED: 5.0,     // Maximum falling speed
     
