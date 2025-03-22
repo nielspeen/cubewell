@@ -48,18 +48,18 @@ const CONFIG = {
     
     // Starfield background settings
     STARFIELD: {
-        INITIAL_STARS: 200,       // Number of stars to start with
-        MIN_STARS: 150,           // Minimum number of stars to maintain
-        SPAWN_RATE: 0.3,          // Chance to spawn a new star each frame (0-1)
-        BASE_SIZE: 0.5,           // Base size of stars
-        SIZE_RANGE: 0.7,          // Random size variation (0-1)
-        MIN_SIZE: 0.3,            // Minimum star size
-        SPEED_RANGE: 2,           // Random speed variation
-        MIN_SPEED: 1,             // Minimum star speed
-        OPACITY_RANGE: 0.5,       // Random opacity variation (0-1)
-        MIN_OPACITY: 0.5,         // Minimum star opacity
-        SPAWN_AREA: 80,           // Area where stars can spawn
-        DESPAWN_DISTANCE: 60,     // Distance at which stars are removed
-        Z_POSITION: -40           // Z position of stars (closer to camera)
+        INITIAL_STARS: 800,       // Number of stars to start with
+        MIN_STARS: 750,           // Minimum number of stars to maintain
+        SPAWN_RATE: 0.4,          // Chance to spawn a new star each frame (0-1)
+        BASE_SIZE: 0.1,           // Base size of stars
+        SIZE_RANGE: 0.2,          // Random size variation (0-1)
+        MIN_SIZE: 0.05,           // Minimum star size
+        SPEED_RANGE: 1.5,         // Random speed variation
+        MIN_SPEED: 0.8,           // Minimum star speed
+        OPACITY_RANGE: 0.3,       // Random opacity variation (0-1)
+        MIN_OPACITY: 0.3,         // Minimum star opacity
+        SPAWN_AREA: 120,          // Area where stars can spawn
+        DESPAWN_DISTANCE: 100,    // Distance at which stars are removed
+        Z_POSITION: -60           // Z position of stars (further from camera)
     }
 }; 
