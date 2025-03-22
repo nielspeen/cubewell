@@ -1,5 +1,5 @@
 /**
- * Polycubes - 3D block shapes for CubeWell
+ * Polycubes - 3D block shapes for Space Cubes
  */
 class Polycube {
     constructor(blocks, color) {

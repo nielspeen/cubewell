@@ -1,4 +1,4 @@
-You are tasked with developing CubeWell, a web-based 3D puzzle game inspired by the classic "Blockout." In this game, players stack falling 3D blocks (polycubes) into a pit to form solid layers without gaps. Completing a layer clears it, causing the layers above to drop down, and the goal is to score points while preventing the pit from filling up completely. Below are detailed, actionable instructions to implement this game using modern web technologies, ensuring compatibility with both desktop and mobile devices.
+You are tasked with developing Space Cubes, a web-based 3D puzzle game inspired by the classic "Blockout." In this game, players stack falling 3D blocks (polycubes) into a pit to form solid layers without gaps. Completing a layer clears it and awards points, while the game ends if blocks stack up to the top of the pit. Below are detailed, actionable instructions to implement this game using modern web technologies, ensuring compatibility with both desktop and mobile devices.
 
 Technology Stack
 
@@ -36,7 +36,7 @@ Define the pit as a 3D grid (e.g., 5 width x 5 depth x 12 height). Each cell is 
 
 Represent the pit internally as a 3D array, where each position is either empty or filled.
 
-Render the pit’s boundaries as a neon-blue wiregrid.
+Render the pit's boundaries as a neon-blue wiregrid.
 
 2. Generate Polycube Blocks
 
@@ -60,7 +60,7 @@ Implement a randomizer to select the next block, ensuring no shape repeats too o
 
 Movement:
 
-Allow horizontal movement (left, right, forward, backward) within the pit’s boundaries.
+Allow horizontal movement (left, right, forward, backward) within the pit's boundaries.
 
 
 Desktop: Use arrow keys.
@@ -83,7 +83,7 @@ Add a fast-drop feature (e.g., Spacebar on desktop, tap on mobile).
 
 Validation:
 
-Check that movements and rotations don’t cause the block to overlap with filled cells or exit the pit.
+Check that movements and rotations don't cause the block to overlap with filled cells or exit the pit.
 
 
 4. Handle Block Falling and Landing
@@ -102,14 +102,14 @@ Check for collisions with the pit bottom or other blocks. When a collision occur
 
 Landing:
 
-Add the block’s cubes to the pit’s grid.
+Add the block's cubes to the pit's grid.
 Trigger layer-checking logic (see step 5).
 Spawn a new block at the top center of the pit.
 
 
 Game Over:
 
-If the new block’s starting position is occupied, end the game.
+If the new block's starting position is occupied, end the game.
 
 
 5. Layer Clearing Logic
@@ -265,7 +265,7 @@ Themes: Unlock new pit designs or block colors as players progress.
 
 Game Loop Summary
 
-Spawn a new polycube at the pit’s top center.
+Spawn a new polycube at the pit's top center.
 
 
 

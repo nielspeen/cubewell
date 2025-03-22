@@ -1,5 +1,5 @@
 /**
- * Game - Main game logic for CubeWell
+ * Game - Main game logic for Space Cubes
  */
 class Game {
     constructor() {

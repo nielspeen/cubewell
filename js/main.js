@@ -1,5 +1,5 @@
 /**
- * Main script - Initialize CubeWell game
+ * Main script - Initialize Space Cubes game
  */
 document.addEventListener('DOMContentLoaded', () => {
     // Create game instance
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (isMobile) {
         welcomeMessage.innerHTML = `
-            <h2>CubeWell</h2>
+            <h2>Space Cubes</h2>
             <p>Stack blocks to form complete layers!</p>
             <p>Controls:<br>
                Arrow buttons: Move block<br>
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     } else {
         welcomeMessage.innerHTML = `
-            <h2>CubeWell</h2>
+            <h2>Space Cubes</h2>
             <p>Stack blocks to form complete layers!</p>
             <p>Controls:<br>
                Arrow keys: Move block<br>
@@ -60,4 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     welcomeMessage.addEventListener('click', startGame);
+
+    // Create game title
+    const title = document.createElement('h2');
+    title.textContent = 'Space Cubes';
+
+    // Create game over title
+    const gameOverTitle = document.createElement('h2');
+    gameOverTitle.textContent = 'Space Cubes';
 }); 

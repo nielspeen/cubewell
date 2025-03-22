@@ -1,5 +1,5 @@
 /**
- * CubeWell Game Configuration
+ * Space Cubes Game Configuration
  */
 const CONFIG = {
     // Pit dimensions
@@ -33,8 +33,8 @@ const CONFIG = {
     ],
     
     // Multiplayer
-    PLAYER_NAME_KEY: 'cubewell_player_name', // localStorage key for player name
-    HIGH_SCORE_KEY: 'cubewell_high_scores',  // localStorage key for high scores
+    PLAYER_NAME_KEY: 'spacecubes_player_name', // localStorage key for player name
+    HIGH_SCORE_KEY: 'spacecubes_high_scores',  // localStorage key for high scores
     
     // Device detection
     IS_MOBILE: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
