@@ -29,14 +29,14 @@ class UI {
         this.previewScene = new THREE.Scene();
         this.previewScene.background = new THREE.Color(0x000000);
         
-        // Camera for preview
+        // Camera for preview - adjusted position to show more of the block
         this.previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-        this.previewCamera.position.set(3, 3, 3);
+        this.previewCamera.position.set(4, 4, 4); // Moved camera back further
         this.previewCamera.lookAt(0, 0, 0);
         
         // Renderer for preview
         this.previewRenderer = new THREE.WebGLRenderer({ antialias: true });
-        this.previewRenderer.setSize(100, 100);
+        this.updatePreviewSize();
         this.nextBlockPreview.innerHTML = '';
         this.nextBlockPreview.appendChild(this.previewRenderer.domElement);
         
@@ -47,6 +47,17 @@ class UI {
         
         const ambientLight = new THREE.AmbientLight(0x404040);
         this.previewScene.add(ambientLight);
+
+        // Add resize handler
+        window.addEventListener('resize', () => this.updatePreviewSize());
+    }
+    
+    /**
+     * Update the preview renderer size to match container
+     */
+    updatePreviewSize() {
+        const rect = this.nextBlockPreview.getBoundingClientRect();
+        this.previewRenderer.setSize(rect.width, rect.height);
     }
     
     /**

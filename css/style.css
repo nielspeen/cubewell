@@ -50,12 +50,15 @@ body {
 }
 
 #next-block {
-    margin-top: clamp(10px, 2vh, 20px);
-    width: clamp(80px, 15vmin, 120px);
-    height: clamp(80px, 15vmin, 120px);
+    position: absolute;
+    bottom: clamp(10px, 2vh, 20px);
+    right: clamp(10px, 2vw, 20px);
+    width: clamp(200px, 30vmin, 300px);
+    height: clamp(200px, 30vmin, 300px);
     text-align: center;
     padding-top: 5px;
     background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10;
 }
 
 #game-over {
@@ -147,8 +150,8 @@ body {
     /* Make next block preview smaller on very small screens */
     @media (max-height: 500px) {
         #next-block {
-            width: clamp(60px, 12vmin, 80px);
-            height: clamp(60px, 12vmin, 80px);
+            width: clamp(150px, 25vmin, 200px);
+            height: clamp(150px, 25vmin, 200px);
         }
     }
 }
