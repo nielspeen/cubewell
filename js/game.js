@@ -619,14 +619,22 @@ class Game {
             CONFIG.PIT_HEIGHT - 1
         ];
         
-        // Check if game is over (can't place new block)
-        if (!this.pit.canPlacePolycube(this.currentBlock)) {
+        // Generate next block in advance so it's ready before we render
+        const nextBlockTemp = this.polycubeGenerator.generate();
+        
+        // Check if the next block can be placed
+        const nextBlockPosition = [
+            Math.floor(CONFIG.PIT_WIDTH / 2), 
+            Math.floor(CONFIG.PIT_DEPTH / 2), 
+            CONFIG.PIT_HEIGHT - 1
+        ];
+        nextBlockTemp.position = nextBlockPosition;
+        
+        // If next block can't be placed, game is over
+        if (!this.pit.canPlacePolycube(nextBlockTemp)) {
             this.gameOver();
             return;
         }
-        
-        // Generate next block in advance so it's ready before we render
-        const nextBlockTemp = this.polycubeGenerator.generate();
         
         // Create and add mesh to scene AFTER positioning
         const blockMesh = this.currentBlock.createMesh();
