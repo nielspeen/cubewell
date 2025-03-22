@@ -27,7 +27,7 @@ class UI {
     setupNextBlockPreview() {
         // Create a small Three.js scene for the next block preview
         this.previewScene = new THREE.Scene();
-        this.previewScene.background = new THREE.Color(0x111122);
+        this.previewScene.background = new THREE.Color(0x000000);
         
         // Camera for preview
         this.previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);

@@ -57,7 +57,7 @@ class Game {
     setupScene() {
         // Scene
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x111122);
+        this.scene.background = new THREE.Color(0x000000);
         
         // Camera positioned to look directly down into the pit from above
         this.camera = new THREE.PerspectiveCamera(
