@@ -703,15 +703,26 @@ class Pit {
         if (layersCount > 0) {
             this.clearAnimationInProgress = true;
             
+            // Add safety timeout to prevent infinite loops
+            const safetyTimeout = setTimeout(() => {
+                console.warn('Layer clearing animation timed out - forcing completion');
+                this.clearAnimationInProgress = false;
+                if (callback) callback(layersCount);
+            }, 5000); // 5 second timeout
+            
             // Process one layer at a time with animation
             const processNextLayer = () => {
                 if (this.layersToClear.length > 0) {
                     const z = this.layersToClear.shift();
                     // Adjust z index for layers that have already been cleared
                     const adjustedZ = z - (layersCount - this.layersToClear.length - 1);
-                    this.clearLayerWithAnimation(adjustedZ, processNextLayer);
+                    this.clearLayerWithAnimation(adjustedZ, () => {
+                        clearTimeout(safetyTimeout); // Clear timeout on successful completion
+                        processNextLayer();
+                    });
                 } else {
                     // All layers processed
+                    clearTimeout(safetyTimeout); // Clear timeout on successful completion
                     this.clearAnimationInProgress = false;
                     if (callback) callback(layersCount);
                 }
