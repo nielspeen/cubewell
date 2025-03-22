@@ -15,11 +15,21 @@ class Polycube {
      */
     createMesh() {
         const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+        const glowGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0); // Slightly larger for glow
+        
+        // Create main material for the cube faces
         const material = new THREE.MeshLambertMaterial({ 
             color: this.color,
-            emissive: new THREE.Color(this.color).multiplyScalar(0.2), // Add some self-illumination
             transparent: true,
             opacity: 0.95
+        });
+        
+        // Create bright edge material that's unaffected by lighting
+        const glowMaterial = new THREE.MeshBasicMaterial({ 
+            color: new THREE.Color(this.color).multiplyScalar(3.0), // Make it 3x brighter than the cube
+            transparent: true,
+            opacity: 0.8, // More opaque
+            side: THREE.BackSide // Only render the back faces for glow effect
         });
         
         this.mesh = new THREE.Group();
@@ -28,9 +38,15 @@ class Polycube {
         this.mesh.visible = false;
         
         for (const [x, y, z] of this.blocks) {
+            // Create the main cube
             const cube = new THREE.Mesh(geometry, material);
             cube.position.set(x, y, z);
             this.mesh.add(cube);
+            
+            // Add bright glowing outer cube
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow.position.set(x, y, z);
+            this.mesh.add(glow);
         }
         
         // Apply the current position and rotation
