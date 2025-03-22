@@ -1151,9 +1151,18 @@ class Game {
         // Determine how far down the block can fall
         let dropDistance = 0;
         let canDrop = true;
+        let safetyCounter = 0;
+        const maxSafetyCount = CONFIG.PIT_HEIGHT * 2; // Should never need more than twice the pit height
         
-        while (canDrop) {
+        while (canDrop && safetyCounter < maxSafetyCount) {
+            safetyCounter++;
             tempPosition[2] -= 1; // Try to move down one more unit
+            
+            // Safety check - don't check positions below the pit
+            if (tempPosition[2] < 0) {
+                canDrop = false;
+                break;
+            }
             
             // Store the current position
             const originalPosition = [...this.currentBlock.position];
@@ -1171,6 +1180,11 @@ class Game {
                 finalPosition = [...tempPosition];
                 dropDistance++;
             }
+        }
+        
+        // If we hit the safety counter, something went wrong
+        if (safetyCounter >= maxSafetyCount) {
+            console.warn('Drop block safety counter triggered - forcing drop to last valid position');
         }
         
         // If the block is already at the bottom, just land it
