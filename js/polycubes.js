@@ -15,22 +15,22 @@ class Polycube {
      */
     createMesh() {
         const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
-        const glowGeometry = new THREE.BoxGeometry(1.1, 1.1, 1.1); // Much larger for soft glow
+        const edgeGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0); // Slightly larger for edges
         
         // Create main material for the cube faces
         const material = new THREE.MeshLambertMaterial({ 
             color: this.color,
             transparent: true,
-            opacity: 0.7, // More translucent for glassy effect
-            side: THREE.DoubleSide // Render both sides for better transparency
+            opacity: 0.7,
+            side: THREE.DoubleSide
         });
         
-        // Create soft glowing material
-        const glowMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0xffffff, // Pure white
+        // Create white edge material
+        const edgeMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff,
             transparent: true,
-            opacity: 0.15, // Very transparent for soft effect
-            side: THREE.BackSide
+            opacity: 0.8,
+            side: THREE.BackSide // Only render the back faces for edge effect
         });
         
         this.mesh = new THREE.Group();
@@ -44,10 +44,10 @@ class Polycube {
             cube.position.set(x, y, z);
             this.mesh.add(cube);
             
-            // Add soft glowing edges
-            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-            glow.position.set(x, y, z);
-            this.mesh.add(glow);
+            // Add white edges using a larger cube
+            const edges = new THREE.Mesh(edgeGeometry, edgeMaterial);
+            edges.position.set(x, y, z);
+            this.mesh.add(edges);
         }
         
         // Apply the current position and rotation

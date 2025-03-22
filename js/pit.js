@@ -361,7 +361,16 @@ class Pit {
         
         // Create geometry and materials once for performance
         const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+        const edgeGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0); // Slightly larger for edges
         const materials = {};
+        
+        // Create white edge material
+        const edgeMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.BackSide // Only render the back faces for edge effect
+        });
         
         // Add blocks for all occupied cells
         for (let x = 0; x < this.width; x++) {
@@ -370,14 +379,14 @@ class Pit {
                     const color = this.grid[x][y][z];
                     
                     if (color !== null) {
-                        // Create or reuse material with darker bottom face
+                        // Create or reuse material with darker bottom face and layer-based tinting
                         if (!materials[color]) {
                             materials[color] = new THREE.MeshLambertMaterial({
                                 color: color,
                                 transparent: true,
                                 opacity: 0.7,
                                 side: THREE.DoubleSide,
-                                // Create a custom shader for the bottom face
+                                // Create a custom shader for the bottom face and layer tinting
                                 onBeforeCompile: (shader) => {
                                     shader.fragmentShader = shader.fragmentShader.replace(
                                         'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
@@ -385,7 +394,9 @@ class Pit {
                                         if (vNormal.y < -0.9) { // Bottom face
                                             gl_FragColor = vec4(outgoingLight * 0.5, diffuseColor.a);
                                         } else {
-                                            gl_FragColor = vec4(outgoingLight, diffuseColor.a);
+                                            // Add brightness based on height (z position)
+                                            float heightFactor = 1.0 + (vPosition.z / ${this.height}) * 0.3; // Up to 30% brighter at top
+                                            gl_FragColor = vec4(outgoingLight * heightFactor, diffuseColor.a);
                                         }
                                         `
                                     );
@@ -393,9 +404,15 @@ class Pit {
                             });
                         }
                         
+                        // Create the main cube
                         const cube = new THREE.Mesh(geometry, materials[color]);
                         cube.position.set(x, y, z);
                         this.placedBlocks.add(cube);
+                        
+                        // Add white edges using a larger cube
+                        const edges = new THREE.Mesh(edgeGeometry, edgeMaterial);
+                        edges.position.set(x, y, z);
+                        this.placedBlocks.add(edges);
                     }
                 }
             }

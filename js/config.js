@@ -42,4 +42,7 @@ const CONFIG = {
     // Physics
     ROTATION_SPEED: Math.PI / 2, // Rotation speed (90 degrees in radians)
     DROP_SPEED_MULTIPLIER: 10,    // How much faster blocks fall when dropping
+    
+    // Visual settings
+    BLOCK_EDGE_WIDTH: 4,          // Width of block edges in pixels
 }; 
