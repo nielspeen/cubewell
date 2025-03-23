@@ -128,7 +128,7 @@ class UI {
                     // Position the block vertically based on its index
                     // Center the entire group of blocks by offsetting by half the total height
                     // Add a negative offset to move everything lower
-                    mesh.position.y = (nextBlocks.length - 1 - index) * 3 - (totalHeight / 2) - 2;
+                    mesh.position.y = (nextBlocks.length - 1 - index) * 3 - (totalHeight / 2) - 6;
                     
                     // Add to preview scene
                     this.previewScene.add(mesh);
