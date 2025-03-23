@@ -36,13 +36,14 @@ body {
 #ui-overlay {
     position: absolute;
     top: clamp(10px, 2vh, 20px);
-    left: clamp(10px, 2vw, 20px);
+    right: clamp(10px, 2vw, 20px);
     z-index: 10;
     font-size: clamp(0.9rem, 2.5vmin, 1.5rem);
     text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
     padding: 5px;
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: 5px;
+    text-align: right;
 }
 
 #score, #level {
@@ -167,7 +168,7 @@ body {
 @media (max-aspect-ratio: 1/2) {
     #ui-overlay {
         top: 5px;
-        left: 5px;
+        right: 5px;
     }
 }
 
