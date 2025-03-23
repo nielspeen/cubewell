@@ -1194,7 +1194,7 @@ class Game {
             return;
         }
         
-        // Play sound
+        // Play sound at the start of the drop
         if (this.sounds.move) {
             this.sounds.move();
         }
