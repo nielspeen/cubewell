@@ -11,6 +11,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure game starts paused
     game.pause();
     
+    // Create high scores box
+    const highScoresBox = document.createElement('div');
+    highScoresBox.className = 'game-message high-scores-box';
+    highScoresBox.style.top = '30%'; // Position above the instructions box
+    
+    // Get high scores from localStorage
+    const highScores = JSON.parse(localStorage.getItem(CONFIG.HIGH_SCORE_KEY) || '[]');
+    
+    if (highScores.length > 0) {
+        highScoresBox.innerHTML = `
+            <h2>High Scores</h2>
+            <ol>
+                ${highScores.map(score => `<li>${score.name}: ${score.score}</li>`).join('')}
+            </ol>
+        `;
+        document.getElementById('game-container').appendChild(highScoresBox);
+    }
+    
     // Show a simple welcome message (in a real game, this would be more elaborate)
     const welcomeMessage = document.createElement('div');
     welcomeMessage.className = 'game-message';
@@ -46,9 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add to the game container
     document.getElementById('game-container').appendChild(welcomeMessage);
     
-    // Hide welcome message and start game
+    // Hide welcome message and high scores box and start game
     const startGame = () => {
         welcomeMessage.style.display = 'none';
+        highScoresBox.style.display = 'none';
         game.resume(); // Explicitly resume the game
     };
     

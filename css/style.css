@@ -177,4 +177,42 @@ body {
     0% { box-shadow: 0 0 5px var(--primary-color); }
     50% { box-shadow: 0 0 20px var(--primary-color); }
     100% { box-shadow: 0 0 5px var(--primary-color); }
+}
+
+.game-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid var(--primary-color);
+    color: white;
+    text-align: center;
+    z-index: 100;
+    box-shadow: 0 0 15px var(--primary-color);
+}
+
+.game-message h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+.high-scores-box {
+    width: clamp(250px, 80vw, 400px);
+}
+
+.high-scores-box ol {
+    list-style-position: inside;
+    padding: 0;
+    margin: 10px 0 0 0;
+    text-align: left;
+}
+
+.high-scores-box li {
+    margin: 5px 0;
+    padding: 5px;
+    border-radius: 3px;
+    background: rgba(0, 170, 255, 0.1);
 } 
