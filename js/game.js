@@ -784,6 +784,11 @@ class Game {
                 if (this.sounds.clear) {
                     this.sounds.clear();
                 }
+                // Remove the special block from the pit
+                positions.forEach(([x, y, z]) => {
+                    this.pit.grid[x][y][z] = null;
+                });
+                this.pit.updateVisualBlocks();
             });
         } else {
             console.log('Special block is entirely on top layer, applying penalties');
