@@ -1064,16 +1064,55 @@ class Game {
         const targetRotation = originalRotation.clone().multiply(q);
         
         // Try different positions for wall kick
+        // Start with no offset, then try single unit offsets in all directions,
+        // then try combinations, and finally try two unit offsets
         const kickOffsets = [
-            [0, 0, 0],  // Original position
-            [1, 0, 0],  // Right
-            [-1, 0, 0], // Left
-            [0, 1, 0],  // Forward
-            [0, -1, 0], // Backward
-            [1, 1, 0],  // Right + Forward
-            [-1, 1, 0], // Left + Forward
-            [1, -1, 0], // Right + Backward
-            [-1, -1, 0] // Left + Backward
+            // No offset
+            [0, 0, 0],
+            
+            // Single unit offsets in all directions
+            [1, 0, 0],   // Right
+            [-1, 0, 0],  // Left
+            [0, 1, 0],   // Forward
+            [0, -1, 0],  // Backward
+            [0, 0, 1],   // Up
+            [0, 0, -1],  // Down
+            
+            // Diagonal single unit offsets (horizontal)
+            [1, 1, 0],   // Right + Forward
+            [-1, 1, 0],  // Left + Forward
+            [1, -1, 0],  // Right + Backward
+            [-1, -1, 0], // Left + Backward
+            
+            // Diagonal single unit offsets (vertical)
+            [1, 0, 1],   // Right + Up
+            [-1, 0, 1],  // Left + Up
+            [0, 1, 1],   // Forward + Up
+            [0, -1, 1],  // Backward + Up
+            [1, 0, -1],  // Right + Down
+            [-1, 0, -1], // Left + Down
+            [0, 1, -1],  // Forward + Down
+            [0, -1, -1], // Backward + Down
+            
+            // Two unit offsets (horizontal)
+            [2, 0, 0],   // Two right
+            [-2, 0, 0],  // Two left
+            [0, 2, 0],   // Two forward
+            [0, -2, 0],  // Two backward
+            
+            // Two unit offsets (vertical)
+            [0, 0, 2],   // Two up
+            [0, 0, -2],  // Two down
+            
+            // Mixed offsets (horizontal + vertical)
+            [1, 0, 1],   // Right + Up
+            [-1, 0, 1],  // Left + Up
+            [0, 1, 1],   // Forward + Up
+            [0, -1, 1],  // Backward + Up
+            [1, 0, -1],  // Right + Down
+            [-1, 0, -1], // Left + Down
+            [0, 1, -1],  // Forward + Down
+            [0, -1, -1]  // Backward + Down
         ];
         
         let validPosition = null;
