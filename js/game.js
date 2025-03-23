@@ -1415,6 +1415,11 @@ class Game {
 
         // Reset last frame time to prevent any animation jumps
         this.lastFrameTime = performance.now();
+
+        // Resume audio context if it's suspended
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
     }
     
     /**
