@@ -142,10 +142,20 @@ class UI {
             
             // Animate rotation with fixed angles to prevent warping
             const animate = (time) => {
-                this.previewMeshes.forEach(mesh => {
-                    // Restore smooth rotation but with slower speed
+                this.previewMeshes.forEach((mesh, index) => {
+                    // Rotate all blocks
                     mesh.rotation.y = time / 3000; // Slower Y rotation
                     mesh.rotation.x = time / 4000; // Slower X rotation
+                    
+                    // Add pulsing effect to the next block (first in the array)
+                    if (index === 0) {
+                        // Create a smooth pulsing effect using sine wave
+                        const pulseScale = 1 + Math.sin(time / 300) * 0.1; // 10% size increase, faster pulse
+                        mesh.scale.set(0.7 * pulseScale, 0.7 * pulseScale, 0.7 * pulseScale);
+                    } else {
+                        // Keep other blocks at normal scale
+                        mesh.scale.set(0.7, 0.7, 0.7);
+                    }
                 });
                 this.previewRenderer.render(this.previewScene, this.previewCamera);
                 this.previewAnimation = requestAnimationFrame(animate);
