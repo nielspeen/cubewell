@@ -67,8 +67,8 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: clamp(15px, 3vmin, 30px);
+    background: rgba(0, 0, 0, 0.95);
+    padding: 20px;
     text-align: center;
     border-radius: 10px;
     border: 2px solid var(--primary-color);
@@ -203,7 +203,7 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.95);
     padding: 20px;
     border-radius: 10px;
     border: 2px solid var(--primary-color);
@@ -220,6 +220,8 @@ body {
 
 .high-scores-box {
     width: clamp(250px, 80vw, 400px);
+    top: 25%;
+    background: rgba(0, 0, 0, 0.95);
 }
 
 .high-scores-box ol {
