@@ -166,7 +166,7 @@ class PolycubeGenerator {
         };
         
         // Initially available shapes (simpler ones for early game)
-        this.availableShapes = ['I3', 'L3', 'Cube2'];
+        this.availableShapes = ['I3', 'L3', 'T3', 'Cube2'];
         
         // Bag for shape selection (to avoid repetition)
         this.bag = [...this.availableShapes];
@@ -184,9 +184,6 @@ class PolycubeGenerator {
         // Add more complex shapes as level increases
         if (level >= 2 && !this.availableShapes.includes('I4')) {
             this.availableShapes.push('I4');
-        }
-        if (level >= 3 && !this.availableShapes.includes('T3')) {
-            this.availableShapes.push('T3');
         }
         if (level >= 4 && !this.availableShapes.includes('Z3')) {
             this.availableShapes.push('Z3');
