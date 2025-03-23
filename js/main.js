@@ -38,8 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <p style="margin-top: 25px;">Controls:</p>
             <ul>
                 <li>Arrow keys: Move block</li>
-                <li>Q/W/E: Rotate around X/Y/Z axis</li>
-                <li>A/S/D: Rotate around X/Y/Z axis (inverse)</li>
+                <li>E/W/Q: Rotate around X/Y/Z axis</li>
+                <li>D/S/A: Rotate around X/Y/Z axis (inverse)</li>
                 <li>Space: Drop block</li>
                 <li>P: Pause/Resume game</li>
             </ul>

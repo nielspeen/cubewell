@@ -50,17 +50,17 @@ class Controls {
                 }
                 
                 // Rotation
-                if (event.code === 'KeyQ') {
+                if (event.code === 'KeyE') {
                     this.game.rotateBlock([1, 0, 0], CONFIG.ROTATION_SPEED);
                 } else if (event.code === 'KeyW') {
                     this.game.rotateBlock([0, 1, 0], CONFIG.ROTATION_SPEED);
-                } else if (event.code === 'KeyE') {
+                } else if (event.code === 'KeyQ') {
                     this.game.rotateBlock([0, 0, 1], CONFIG.ROTATION_SPEED);
-                } else if (event.code === 'KeyA') {
+                } else if (event.code === 'KeyD') {
                     this.game.rotateBlock([1, 0, 0], -CONFIG.ROTATION_SPEED);
                 } else if (event.code === 'KeyS') {
                     this.game.rotateBlock([0, 1, 0], -CONFIG.ROTATION_SPEED);
-                } else if (event.code === 'KeyD') {
+                } else if (event.code === 'KeyA') {
                     this.game.rotateBlock([0, 0, 1], -CONFIG.ROTATION_SPEED);
                 }
                 

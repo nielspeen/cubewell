@@ -762,9 +762,57 @@ class Game {
             this.pit.clearLayerWithAnimation(0, () => {
                 // Add bonus points for using special block effect
                 this.addScore(CONFIG.POINTS_PER_LAYER);
+                // Play the clear layer sound effect
+                if (this.sounds.clear) {
+                    this.sounds.clear();
+                }
             });
         } else {
-            console.log('Special block is entirely on top layer, no effect');
+            console.log('Special block is entirely on top layer, applying penalties');
+            
+            // 1. Score Penalty: Deduct points
+            this.addScore(-CONFIG.POINTS_PER_BLOCK * 2);
+            
+            // 2. Speed Penalty: Temporarily slow down the game
+            const originalSpeed = this.fallSpeed;
+            this.fallSpeed *= 0.7; // 30% slower
+            setTimeout(() => {
+                this.fallSpeed = originalSpeed;
+            }, 5000); // Return to normal speed after 5 seconds
+            
+            // 3. Visual Penalty: Flash the screen red briefly
+            const flashOverlay = document.createElement('div');
+            flashOverlay.style.position = 'fixed';
+            flashOverlay.style.top = '0';
+            flashOverlay.style.left = '0';
+            flashOverlay.style.width = '100%';
+            flashOverlay.style.height = '100%';
+            flashOverlay.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+            flashOverlay.style.zIndex = '1000';
+            flashOverlay.style.pointerEvents = 'none';
+            document.body.appendChild(flashOverlay);
+            
+            // Remove the flash after 500ms
+            setTimeout(() => {
+                document.body.removeChild(flashOverlay);
+            }, 500);
+            
+            // 4. Sound Penalty: Play a negative sound effect
+            const context = this.audioContext;
+            const osc = context.createOscillator();
+            const gain = context.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = 100;
+            gain.gain.value = this.sfxVolume * 0.5;
+            
+            osc.connect(gain);
+            gain.connect(context.destination);
+            
+            osc.start();
+            osc.frequency.exponentialRampToValueAtTime(50, context.currentTime + 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3);
+            osc.stop(context.currentTime + 0.3);
         }
     }
     
