@@ -780,15 +780,21 @@ class Pit {
      * Check if the game is over (blocks reach the top)
      */
     isGameOver(nextPolycube) {
-        // Position the next polycube at the top center
-        nextPolycube.position = [
-            Math.floor(this.width / 2), 
-            Math.floor(this.depth / 2), 
-            this.height - 1
-        ];
+        // Try all possible positions at the top layer
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.depth; y++) {
+                // Try to place the block at this position
+                nextPolycube.position = [x, y, this.height - 1];
+                
+                // If we can place it anywhere, game is not over
+                if (this.canPlacePolycube(nextPolycube)) {
+                    return false;
+                }
+            }
+        }
         
-        // Try to place it - if can't place, game over
-        return !this.canPlacePolycube(nextPolycube);
+        // If we couldn't place the block anywhere at the top layer, game is over
+        return true;
     }
     
     /**
