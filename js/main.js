@@ -11,75 +11,73 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure game starts paused
     game.pause();
     
-    // Create high scores box
-    const highScoresBox = document.createElement('div');
-    highScoresBox.className = 'game-message high-scores-box';
-    highScoresBox.style.top = '25%'; // Position higher up to avoid overlap
-    
-    // Get high scores from localStorage
-    const highScores = JSON.parse(localStorage.getItem(CONFIG.HIGH_SCORE_KEY) || '[]');
-    
-    if (highScores.length > 0) {
-        highScoresBox.innerHTML = `
-            <h2>High Scores</h2>
-            <ol>
-                ${highScores.map(score => `<li>${score.name}: ${score.score}</li>`).join('')}
-            </ol>
-        `;
-        document.getElementById('game-container').appendChild(highScoresBox);
-    }
-    
-    // Show a simple welcome message (in a real game, this would be more elaborate)
-    const welcomeMessage = document.createElement('div');
-    welcomeMessage.className = 'game-message';
+    // Create instructions box
+    const instructionsBox = document.createElement('div');
+    instructionsBox.className = 'game-message';
     
     // Different instructions based on device
     const isMobile = CONFIG.IS_MOBILE;
     
     if (isMobile) {
-        welcomeMessage.innerHTML = `
+        instructionsBox.innerHTML = `
             <h2>Space Cubes</h2>
             <p>Stack blocks to form complete layers!</p>
-            <p>Controls:<br>
-               Arrow buttons: Move block<br>
-               Rotate X/Y/Z: Rotate around axes<br>
-               Drop: Drop block quickly<br>
-               Pause/Resume: Pause the game</p>
-            <p>Tap anywhere to start</p>
+            <p>Controls:</p>
+            <ul>
+                <li>Arrow buttons: Move block</li>
+                <li>Rotate X/Y/Z: Rotate around axes</li>
+                <li>Drop: Drop block quickly</li>
+                <li>Pause/Resume: Pause the game</li>
+            </ul>
+            <button id="start-btn">Start Game</button>
         `;
     } else {
-        welcomeMessage.innerHTML = `
+        instructionsBox.innerHTML = `
             <h2>Space Cubes</h2>
             <p>Stack blocks to form complete layers!</p>
-            <p>Controls:<br>
-               Arrow keys: Move block<br>
-               Q/W/E: Rotate around X/Y/Z axis<br>
-               A/S/D: Rotate around X/Y/Z axis (inverse)<br>
-               Space: Drop block / Start game<br>
-               P: Pause/Resume game</p>
-            <p>Press SPACE to start</p>
+            <p>Controls:</p>
+            <ul>
+                <li>Arrow keys: Move block</li>
+                <li>Q/W/E: Rotate around X/Y/Z axis</li>
+                <li>A/S/D: Rotate around X/Y/Z axis (inverse)</li>
+                <li>Space: Drop block</li>
+                <li>P: Pause/Resume game</li>
+            </ul>
+            <button id="start-btn">Start Game</button>
         `;
     }
     
-    // Add to the game container
-    document.getElementById('game-container').appendChild(welcomeMessage);
+    document.getElementById('game-container').appendChild(instructionsBox);
     
-    // Hide welcome message and high scores box and start game
+    // Create high scores section in the same box
+    const highScores = JSON.parse(localStorage.getItem(CONFIG.HIGH_SCORE_KEY) || '[]');
+    if (highScores.length > 0) {
+        const highScoresSection = document.createElement('div');
+        highScoresSection.className = 'high-scores-section';
+        highScoresSection.innerHTML = `
+            <h2>High Scores</h2>
+            <ol>
+                ${highScores.map(score => `<li>${score.name}: ${score.score}</li>`).join('')}
+            </ol>
+        `;
+        instructionsBox.appendChild(highScoresSection);
+    }
+    
+    // Hide instructions box and start game
     const startGame = () => {
-        welcomeMessage.style.display = 'none';
-        highScoresBox.style.display = 'none';
+        instructionsBox.style.display = 'none';
         game.resume(); // Explicitly resume the game
     };
     
-    // Event listeners to hide welcome and start game
+    // Event listeners to hide instructions and start game
     document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && welcomeMessage.style.display !== 'none') {
+        if (e.code === 'Space' && instructionsBox.style.display !== 'none') {
             startGame();
         }
     });
     
-    welcomeMessage.addEventListener('click', startGame);
-
+    instructionsBox.addEventListener('click', startGame);
+    
     // Create game title
     const title = document.createElement('h2');
     title.textContent = 'Space Cubes';
