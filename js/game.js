@@ -708,10 +708,8 @@ class Game {
         this.polycubeGenerator.blocksSinceLastSpecial++;
         console.log('Blocks since last special:', this.polycubeGenerator.blocksSinceLastSpecial, 'Next special in:', this.polycubeGenerator.nextSpecialBlockInterval);
         
-        // Handle special block effect if this was a special block
-        if (this.currentBlock.isSpecial) {
-            this.handleSpecialBlockEffect();
-        }
+        // Handle special block effect
+        this.handleSpecialBlockEffect();
         
         // Check for completed layers
         const layersCleared = this.pit.checkAndClearLayers((clearedCount) => {
@@ -745,37 +743,28 @@ class Game {
      * Handle special block effect
      */
     handleSpecialBlockEffect() {
-        console.log('Special block effect triggered!');
-        
-        // Find a random filled layer to clear
-        const filledLayers = [];
-        for (let z = 0; z < CONFIG.PIT_HEIGHT; z++) {
-            let isFilled = true;
-            for (let x = 0; x < CONFIG.PIT_WIDTH; x++) {
-                for (let y = 0; y < CONFIG.PIT_DEPTH; y++) {
-                    if (this.pit.grid[x][y][z] === null) {
-                        isFilled = false;
-                        break;
-                    }
-                }
-                if (!isFilled) break;
-            }
-            if (isFilled) {
-                filledLayers.push(z);
-            }
+        // Only proceed if this is actually a special block
+        if (!this.currentBlock.isSpecial) {
+            return;
         }
         
-        // If we found any filled layers, clear a random one
-        if (filledLayers.length > 0) {
-            const randomLayer = filledLayers[Math.floor(Math.random() * filledLayers.length)];
-            console.log('Clearing layer:', randomLayer);
-            this.pit.clearLayerWithAnimation(randomLayer, () => {
-                // Award bonus points for special block effect
-                this.addScore(CONFIG.POINTS_PER_LAYER * 2);
-                console.log('Special block effect completed!');
+        console.log('Special block effect triggered!');
+        
+        // Get the positions of all blocks in the special block
+        const positions = this.currentBlock.getWorldPositions();
+        
+        // Check if any part of the block is below the top layer
+        const isPartiallyInHole = positions.some(([x, y, z]) => z < CONFIG.PIT_HEIGHT - 1);
+        
+        if (isPartiallyInHole) {
+            console.log('Special block is partially in a hole, clearing bottom layer');
+            // Clear the bottom layer (z = 0)
+            this.pit.clearLayerWithAnimation(0, () => {
+                // Add bonus points for using special block effect
+                this.addScore(CONFIG.POINTS_PER_LAYER);
             });
         } else {
-            console.log('No filled layers found for special block effect');
+            console.log('Special block is entirely on top layer, no effect');
         }
     }
     
