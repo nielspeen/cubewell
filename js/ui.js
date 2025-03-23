@@ -27,18 +27,28 @@ class UI {
     setupNextBlockPreview() {
         // Create a small Three.js scene for the next block preview
         this.previewScene = new THREE.Scene();
-        this.previewScene.background = new THREE.Color(0x000000);
         
         // Camera for preview - adjusted position to show more of the block
         this.previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
         this.previewCamera.position.set(4, 4, 4); // Moved camera back further
         this.previewCamera.lookAt(0, 0, 0);
         
-        // Renderer for preview
-        this.previewRenderer = new THREE.WebGLRenderer({ antialias: true });
+        // Renderer for preview with transparent background
+        this.previewRenderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true, // Enable transparency
+            premultipliedAlpha: false // Important for proper transparency
+        });
+        this.previewRenderer.setClearColor(0x000000, 0); // Set clear color with 0 alpha
+        this.previewRenderer.setPixelRatio(window.devicePixelRatio);
+        
+        // Get the canvas element and set its style
+        const canvas = this.previewRenderer.domElement;
+        canvas.style.background = 'transparent';
+        
         this.updatePreviewSize();
         this.nextBlockPreview.innerHTML = '';
-        this.nextBlockPreview.appendChild(this.previewRenderer.domElement);
+        this.nextBlockPreview.appendChild(canvas);
         
         // Add lights to the preview scene
         const light = new THREE.DirectionalLight(0xffffff, 1);
