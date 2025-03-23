@@ -276,6 +276,22 @@ body {
     background-color: var(--secondary-color);
 }
 
+.start-prompt {
+    margin-top: 25px;
+    font-size: 1.3em;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    font-weight: bold;
+    text-shadow: 0 0 10px var(--primary-color);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
 .high-scores-box {
     width: clamp(250px, 80vw, 400px);
     top: 25%;

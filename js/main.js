@@ -22,20 +22,20 @@ document.addEventListener('DOMContentLoaded', () => {
         instructionsBox.innerHTML = `
             <h2>Space Cubes</h2>
             <p>Stack blocks to form complete layers!</p>
-            <p>Controls:</p>
+            <p style="margin-top: 25px;">Controls:</p>
             <ul>
                 <li>Arrow buttons: Move block</li>
                 <li>Rotate X/Y/Z: Rotate around axes</li>
                 <li>Drop: Drop block quickly</li>
                 <li>Pause/Resume: Pause the game</li>
             </ul>
-            <button id="start-btn">Start Game</button>
+            <p class="start-prompt">Press SPACE to start!</p>
         `;
     } else {
         instructionsBox.innerHTML = `
             <h2>Space Cubes</h2>
             <p>Stack blocks to form complete layers!</p>
-            <p>Controls:</p>
+            <p style="margin-top: 25px;">Controls:</p>
             <ul>
                 <li>Arrow keys: Move block</li>
                 <li>Q/W/E: Rotate around X/Y/Z axis</li>
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li>Space: Drop block</li>
                 <li>P: Pause/Resume game</li>
             </ul>
-            <button id="start-btn">Start Game</button>
+            <p class="start-prompt">Press SPACE to start!</p>
         `;
     }
     
