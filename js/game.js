@@ -52,6 +52,12 @@ class Game {
         
         // Initialize block queue
         this.generateNextBlocks(3); // Generate 3 blocks initially
+
+        // Handle WebGL context loss
+        this.renderer.domElement.addEventListener('webglcontextlost', (event) => {
+            event.preventDefault();
+            this.handleContextLoss();
+        }, false);
     }
     
     /**
@@ -81,7 +87,14 @@ class Game {
         this.scene.add(this.gameContainer);
         
         // Renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance",
+            failIfMajorPerformanceCaveat: true,
+            preserveDrawingBuffer: true,
+            stencil: true,
+            depth: true
+        });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
         this.renderer.shadowMap.enabled = true; // Enable shadows for better visuals
@@ -1545,5 +1558,51 @@ class Game {
         this.paused = false;
         this.background.setActive(true); // Reactivate background when game resumes
         this.pauseMessage.style.display = 'none';
+    }
+
+    /**
+     * Handle WebGL context loss
+     */
+    handleContextLoss() {
+        // Stop the animation loop
+        this.isPaused = true;
+        
+        // Clean up resources
+        this.cleanupResources();
+        
+        // Recreate the WebGL context
+        this.setupScene();
+        
+        // Restart the game state
+        this.restart();
+    }
+
+    /**
+     * Clean up resources before context loss
+     */
+    cleanupResources() {
+        // Dispose of geometries and materials
+        this.scene.traverse((object) => {
+            if (object instanceof THREE.Mesh) {
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => material.dispose());
+                    } else {
+                        object.material.dispose();
+                    }
+                }
+            }
+        });
+
+        // Clear the scene
+        while(this.scene.children.length > 0) { 
+            this.scene.remove(this.scene.children[0]); 
+        }
+
+        // Dispose of the renderer
+        if (this.renderer) {
+            this.renderer.dispose();
+        }
     }
 } 
