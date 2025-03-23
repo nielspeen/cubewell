@@ -648,32 +648,37 @@ class Game {
         // Get the next block from the queue
         this.currentBlock = this.nextBlocks.shift();
         
-        // Position at top center of pit BEFORE creating the mesh
-        this.currentBlock.position = [
-            Math.floor(CONFIG.PIT_WIDTH / 2), 
-            Math.floor(CONFIG.PIT_DEPTH / 2), 
-            CONFIG.PIT_HEIGHT - 1
+        // Try different starting positions for the block
+        const startPositions = [
+            // Center position
+            [Math.floor(CONFIG.PIT_WIDTH / 2), Math.floor(CONFIG.PIT_DEPTH / 2), CONFIG.PIT_HEIGHT - 1],
+            // Try offset positions
+            [Math.floor(CONFIG.PIT_WIDTH / 2) - 1, Math.floor(CONFIG.PIT_DEPTH / 2), CONFIG.PIT_HEIGHT - 1],
+            [Math.floor(CONFIG.PIT_WIDTH / 2) + 1, Math.floor(CONFIG.PIT_DEPTH / 2), CONFIG.PIT_HEIGHT - 1],
+            [Math.floor(CONFIG.PIT_WIDTH / 2), Math.floor(CONFIG.PIT_DEPTH / 2) - 1, CONFIG.PIT_HEIGHT - 1],
+            [Math.floor(CONFIG.PIT_WIDTH / 2), Math.floor(CONFIG.PIT_DEPTH / 2) + 1, CONFIG.PIT_HEIGHT - 1]
         ];
-        
-        // Generate a new block to maintain the queue
-        const newBlock = this.polycubeGenerator.generate();
-        
-        // Check if the next block can be placed
-        const nextBlockPosition = [
-            Math.floor(CONFIG.PIT_WIDTH / 2), 
-            Math.floor(CONFIG.PIT_DEPTH / 2), 
-            CONFIG.PIT_HEIGHT - 1
-        ];
-        newBlock.position = nextBlockPosition;
-        
-        // If next block can't be placed, game is over
-        if (!this.pit.canPlacePolycube(newBlock)) {
+
+        let canPlace = false;
+        for (const position of startPositions) {
+            this.currentBlock.position = position;
+            if (this.pit.canPlacePolycube(this.currentBlock)) {
+                canPlace = true;
+                break;
+            }
+        }
+
+        // If we couldn't place the block in any position, game is over
+        if (!canPlace) {
             this.gameOver();
             return;
         }
-        
+
         // Create and add mesh to scene AFTER positioning
         const blockMesh = this.currentBlock.createMesh();
+        
+        // Generate a new block to maintain the queue
+        const newBlock = this.polycubeGenerator.generate();
         
         // Add the new block to the queue
         this.nextBlocks.push(newBlock);
