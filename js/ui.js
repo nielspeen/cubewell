@@ -190,18 +190,11 @@ class UI {
      * Get player name from localStorage or prompt
      */
     getPlayerName() {
-        let playerName = localStorage.getItem(CONFIG.PLAYER_NAME_KEY);
-        
-        if (!playerName) {
-            playerName = prompt('Enter your name for the high score:', 'Player');
-            if (playerName) {
-                localStorage.setItem(CONFIG.PLAYER_NAME_KEY, playerName);
-            } else {
-                playerName = 'Anonymous';
-            }
+        const playerName = prompt('Enter your name for the high score:', 'Player');
+        if (playerName && playerName.trim()) {
+            return playerName.trim();
         }
-        
-        return playerName;
+        return 'Anonymous';
     }
     
     /**

@@ -34,6 +34,7 @@ const CONFIG = {
     
     // High scores
     HIGH_SCORE_KEY: 'spacecubes_high_scores',  // localStorage key for high scores
+    PLAYER_NAME_KEY: 'spacecubes_player_name',  // localStorage key for player name
     
     // Device detection
     IS_MOBILE: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
