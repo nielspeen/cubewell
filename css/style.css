@@ -76,6 +76,22 @@ body {
     z-index: 20;
     width: clamp(250px, 80vw, 400px);
     font-size: clamp(0.9rem, 2.5vmin, 1.2rem);
+    animation: gameOverPulse 1s infinite;
+}
+
+@keyframes gameOverPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 15px var(--primary-color);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow: 0 0 30px var(--primary-color);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 15px var(--primary-color);
+    }
 }
 
 #game-over h2 {

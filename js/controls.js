@@ -154,11 +154,6 @@ class Controls {
         });
         
         // Game canvas click - removed auto-resume functionality
-        
-        // Restart button
-        document.getElementById('restart-btn').addEventListener('click', () => {
-            this.game.restart();
-        });
     }
     
     /**

@@ -1237,6 +1237,11 @@ class Game {
         if (this.ui) {
             this.ui.showGameOver(this.score);
         }
+
+        // Auto-restart after 5 seconds
+        setTimeout(() => {
+            this.restart();
+        }, 5000);
     }
     
     /**
@@ -1248,7 +1253,7 @@ class Game {
         this.level = 1;
         this.fallSpeed = CONFIG.INITIAL_FALL_SPEED;
         this.isGameOver = false;
-        this.isPaused = true;
+        this.isPaused = false;
         
         // Reset pit
         this.pit.reset();
@@ -1272,6 +1277,14 @@ class Game {
             this.ui.hideGameOver();
             this.ui.updateNextBlockPreview(this.nextBlock);
         }
+
+        // Activate background
+        if (this.background) {
+            this.background.setActive(true);
+        }
+
+        // Reset last frame time to prevent any animation jumps
+        this.lastFrameTime = performance.now();
     }
     
     /**
