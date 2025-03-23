@@ -824,4 +824,639 @@ class Pit {
         // Reset visual blocks
         this.updateVisualBlocks();
     }
+    
+    /**
+     * Check if a horizontal line is complete (all cells filled with same color)
+     */
+    isHorizontalLineComplete(x, z) {
+        const color = this.grid[x][0][z];
+        if (color === null) return false;
+        
+        for (let y = 0; y < this.depth; y++) {
+            if (this.grid[x][y][z] !== color) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Check if a vertical line is complete (all cells filled with same color)
+     */
+    isVerticalLineComplete(y, z) {
+        const color = this.grid[0][y][z];
+        if (color === null) return false;
+        
+        for (let x = 0; x < this.width; x++) {
+            if (this.grid[x][y][z] !== color) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Clear a horizontal line with animation
+     */
+    clearHorizontalLineWithAnimation(x, z, callback) {
+        // Get blocks in the line to animate
+        const lineBlocks = [];
+        const blockPositions = [];
+        const blockColors = [];
+        
+        // Store block data for animation
+        for (let y = 0; y < this.depth; y++) {
+            const color = this.grid[x][y][z];
+            if (color !== null) {
+                blockPositions.push([x, y, z]);
+                blockColors.push(color);
+            }
+        }
+        
+        // Create animation effect blocks
+        const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+        
+        // Create glowing blocks for the flash effect
+        for (let i = 0; i < blockPositions.length; i++) {
+            const [x, y, z] = blockPositions[i];
+            const color = blockColors[i];
+            
+            // Create a glowing material
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            const block = new THREE.Mesh(geometry, material);
+            block.position.set(x, y, z);
+            block.userData.originalColor = color;
+            block.userData.originalPos = [x, y, z];
+            lineBlocks.push(block);
+            this.clearingEffects.add(block);
+        }
+        
+        // Animation sequence:
+        // 1. Flash effect
+        // 2. Shrink blocks and create particles
+        // 3. Remove line and shift blocks
+        
+        // Flash effect
+        const flashDuration = 0.4; // seconds
+        const startTime = performance.now();
+        
+        const flashAnimation = () => {
+            const elapsed = (performance.now() - startTime) / 1000;
+            const progress = Math.min(elapsed / flashDuration, 1);
+            
+            if (progress < 1) {
+                // Color transition effect
+                const hue = progress * 360; // Full color cycle
+                const pulseIntensity = 0.7 + 0.3 * Math.sin(progress * Math.PI * 6);
+                
+                for (const block of lineBlocks) {
+                    // Color cycling with HSL
+                    block.material.color.setHSL(hue/360, 1, 0.7);
+                    block.material.opacity = 0.7 + 0.3 * pulseIntensity;
+                    
+                    // Scale pulsing
+                    const scale = 1 + 0.15 * Math.sin(progress * Math.PI * 6);
+                    block.scale.set(scale, scale, scale);
+                }
+                
+                requestAnimationFrame(flashAnimation);
+            } else {
+                // Flash done, start shrink and particles
+                startShrinkAndParticles();
+            }
+        };
+        
+        const startShrinkAndParticles = () => {
+            // Create particle system
+            const particles = new THREE.Group();
+            this.clearingEffects.add(particles);
+            
+            // Create particles for each block
+            for (let i = 0; i < lineBlocks.length; i++) {
+                const [x, y, z] = blockPositions[i];
+                const color = blockColors[i];
+                
+                // Create between 4-6 particles per block
+                const particleCount = 4 + Math.floor(Math.random() * 3);
+                
+                for (let j = 0; j < particleCount; j++) {
+                    // Varied particle sizes
+                    const particleSize = 0.08 + Math.random() * 0.12;
+                    
+                    // Use different geometries for visual variety
+                    let particleGeometry;
+                    const geoType = Math.floor(Math.random() * 2);
+                    if (geoType === 0) {
+                        particleGeometry = new THREE.BoxGeometry(
+                            particleSize, particleSize, particleSize
+                        );
+                    } else {
+                        particleGeometry = new THREE.SphereGeometry(particleSize/2, 4, 4);
+                    }
+                    
+                    // Particle with glow effect
+                    const particleMaterial = new THREE.MeshBasicMaterial({
+                        color: color,
+                        transparent: true,
+                        opacity: 0.9
+                    });
+                    
+                    const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                    
+                    // Position with slight scatter
+                    particle.position.set(
+                        x + (Math.random() - 0.5) * 0.5,
+                        y + (Math.random() - 0.5) * 0.5,
+                        z + (Math.random() - 0.5) * 0.5
+                    );
+                    
+                    // Random velocity
+                    const speed = 1 + Math.random() * 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const elevation = Math.random() * Math.PI - Math.PI/2;
+                    
+                    particle.userData.velocity = [
+                        speed * Math.cos(angle) * Math.cos(elevation),
+                        speed * Math.sin(angle) * Math.cos(elevation),
+                        speed * Math.sin(elevation)
+                    ];
+                    
+                    // Add rotation
+                    particle.userData.rotation = [
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2
+                    ];
+                    
+                    // Different lifespans for particles
+                    particle.userData.lifespan = 0.5 + Math.random() * 0.2;
+                    
+                    particles.add(particle);
+                }
+            }
+            
+            // Shrink and particle animation
+            const shrinkDuration = 0.5;
+            const shrinkStartTime = performance.now();
+            
+            const shrinkAndParticlesAnimation = () => {
+                const elapsed = (performance.now() - shrinkStartTime) / 1000;
+                const progress = Math.min(elapsed / shrinkDuration, 1);
+                
+                // Shrink the original blocks
+                for (const block of lineBlocks) {
+                    const scale = Math.max(0, 1 - progress * 1.2);
+                    block.scale.set(scale, scale, scale);
+                    
+                    // Add slight spin during shrink
+                    block.rotation.x += 0.03;
+                    block.rotation.y += 0.02;
+                    
+                    // Color fade to white
+                    const currentHue = block.material.color.getHSL({h:0, s:0, l:0}).h;
+                    block.material.color.setHSL(currentHue, 1 - progress, 0.7 + progress * 0.3);
+                    block.material.opacity = Math.max(0, 1 - progress * 1.5);
+                }
+                
+                // Particle effects
+                if (particles) {
+                    const particlesToRemove = [];
+                    
+                    for (let i = 0; i < particles.children.length; i++) {
+                        const particle = particles.children[i];
+                        const velocity = particle.userData.velocity;
+                        const rotation = particle.userData.rotation;
+                        const particleLifespan = particle.userData.lifespan;
+                        
+                        const particleProgress = Math.min(elapsed / particleLifespan, 1);
+                        
+                        // Apply velocity
+                        const speedFactor = 0.02 * (1 + particleProgress);
+                        particle.position.x += velocity[0] * speedFactor;
+                        particle.position.y += velocity[1] * speedFactor;
+                        particle.position.z += velocity[2] * speedFactor;
+                        
+                        // Apply rotation
+                        particle.rotation.x += rotation[0];
+                        particle.rotation.y += rotation[1];
+                        particle.rotation.z += rotation[2];
+                        
+                        // Scale particles down
+                        const particleScale = 1 - particleProgress;
+                        particle.scale.set(particleScale, particleScale, particleScale);
+                        
+                        // Fade out particle
+                        const fade = Math.max(0, 1 - particleProgress * 1.2);
+                        const pulse = 0.2 * Math.sin(particleProgress * 10);
+                        particle.material.opacity = fade + pulse;
+                        
+                        if (particleProgress >= 1) {
+                            particlesToRemove.push(particle);
+                        }
+                    }
+                    
+                    for (const particle of particlesToRemove) {
+                        particles.remove(particle);
+                    }
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(shrinkAndParticlesAnimation);
+                } else {
+                    // Animation complete - now update the grid
+                    
+                    // Remove animation objects
+                    this.clearingEffects.remove(particles);
+                    for (const block of lineBlocks) {
+                        this.clearingEffects.remove(block);
+                    }
+                    
+                    // Perform the actual grid update
+                    this.clearHorizontalLine(x, z);
+                    
+                    // Invoke callback when done
+                    if (callback) callback();
+                }
+            };
+            
+            requestAnimationFrame(shrinkAndParticlesAnimation);
+        };
+        
+        // Start the animation sequence
+        requestAnimationFrame(flashAnimation);
+    }
+    
+    /**
+     * Clear a vertical line with animation
+     */
+    clearVerticalLineWithAnimation(y, z, callback) {
+        // Get blocks in the line to animate
+        const lineBlocks = [];
+        const blockPositions = [];
+        const blockColors = [];
+        
+        // Store block data for animation
+        for (let x = 0; x < this.width; x++) {
+            const color = this.grid[x][y][z];
+            if (color !== null) {
+                blockPositions.push([x, y, z]);
+                blockColors.push(color);
+            }
+        }
+        
+        // Create animation effect blocks
+        const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+        
+        // Create glowing blocks for the flash effect
+        for (let i = 0; i < blockPositions.length; i++) {
+            const [x, y, z] = blockPositions[i];
+            const color = blockColors[i];
+            
+            // Create a glowing material
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            const block = new THREE.Mesh(geometry, material);
+            block.position.set(x, y, z);
+            block.userData.originalColor = color;
+            block.userData.originalPos = [x, y, z];
+            lineBlocks.push(block);
+            this.clearingEffects.add(block);
+        }
+        
+        // Animation sequence:
+        // 1. Flash effect
+        // 2. Shrink blocks and create particles
+        // 3. Remove line and shift blocks
+        
+        // Flash effect
+        const flashDuration = 0.4; // seconds
+        const startTime = performance.now();
+        
+        const flashAnimation = () => {
+            const elapsed = (performance.now() - startTime) / 1000;
+            const progress = Math.min(elapsed / flashDuration, 1);
+            
+            if (progress < 1) {
+                // Color transition effect
+                const hue = progress * 360; // Full color cycle
+                const pulseIntensity = 0.7 + 0.3 * Math.sin(progress * Math.PI * 6);
+                
+                for (const block of lineBlocks) {
+                    // Color cycling with HSL
+                    block.material.color.setHSL(hue/360, 1, 0.7);
+                    block.material.opacity = 0.7 + 0.3 * pulseIntensity;
+                    
+                    // Scale pulsing
+                    const scale = 1 + 0.15 * Math.sin(progress * Math.PI * 6);
+                    block.scale.set(scale, scale, scale);
+                }
+                
+                requestAnimationFrame(flashAnimation);
+            } else {
+                // Flash done, start shrink and particles
+                startShrinkAndParticles();
+            }
+        };
+        
+        const startShrinkAndParticles = () => {
+            // Create particle system
+            const particles = new THREE.Group();
+            this.clearingEffects.add(particles);
+            
+            // Create particles for each block
+            for (let i = 0; i < lineBlocks.length; i++) {
+                const [x, y, z] = blockPositions[i];
+                const color = blockColors[i];
+                
+                // Create between 4-6 particles per block
+                const particleCount = 4 + Math.floor(Math.random() * 3);
+                
+                for (let j = 0; j < particleCount; j++) {
+                    // Varied particle sizes
+                    const particleSize = 0.08 + Math.random() * 0.12;
+                    
+                    // Use different geometries for visual variety
+                    let particleGeometry;
+                    const geoType = Math.floor(Math.random() * 2);
+                    if (geoType === 0) {
+                        particleGeometry = new THREE.BoxGeometry(
+                            particleSize, particleSize, particleSize
+                        );
+                    } else {
+                        particleGeometry = new THREE.SphereGeometry(particleSize/2, 4, 4);
+                    }
+                    
+                    // Particle with glow effect
+                    const particleMaterial = new THREE.MeshBasicMaterial({
+                        color: color,
+                        transparent: true,
+                        opacity: 0.9
+                    });
+                    
+                    const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                    
+                    // Position with slight scatter
+                    particle.position.set(
+                        x + (Math.random() - 0.5) * 0.5,
+                        y + (Math.random() - 0.5) * 0.5,
+                        z + (Math.random() - 0.5) * 0.5
+                    );
+                    
+                    // Random velocity
+                    const speed = 1 + Math.random() * 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const elevation = Math.random() * Math.PI - Math.PI/2;
+                    
+                    particle.userData.velocity = [
+                        speed * Math.cos(angle) * Math.cos(elevation),
+                        speed * Math.sin(angle) * Math.cos(elevation),
+                        speed * Math.sin(elevation)
+                    ];
+                    
+                    // Add rotation
+                    particle.userData.rotation = [
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2
+                    ];
+                    
+                    // Different lifespans for particles
+                    particle.userData.lifespan = 0.5 + Math.random() * 0.2;
+                    
+                    particles.add(particle);
+                }
+            }
+            
+            // Shrink and particle animation
+            const shrinkDuration = 0.5;
+            const shrinkStartTime = performance.now();
+            
+            const shrinkAndParticlesAnimation = () => {
+                const elapsed = (performance.now() - shrinkStartTime) / 1000;
+                const progress = Math.min(elapsed / shrinkDuration, 1);
+                
+                // Shrink the original blocks
+                for (const block of lineBlocks) {
+                    const scale = Math.max(0, 1 - progress * 1.2);
+                    block.scale.set(scale, scale, scale);
+                    
+                    // Add slight spin during shrink
+                    block.rotation.x += 0.03;
+                    block.rotation.y += 0.02;
+                    
+                    // Color fade to white
+                    const currentHue = block.material.color.getHSL({h:0, s:0, l:0}).h;
+                    block.material.color.setHSL(currentHue, 1 - progress, 0.7 + progress * 0.3);
+                    block.material.opacity = Math.max(0, 1 - progress * 1.5);
+                }
+                
+                // Particle effects
+                if (particles) {
+                    const particlesToRemove = [];
+                    
+                    for (let i = 0; i < particles.children.length; i++) {
+                        const particle = particles.children[i];
+                        const velocity = particle.userData.velocity;
+                        const rotation = particle.userData.rotation;
+                        const particleLifespan = particle.userData.lifespan;
+                        
+                        const particleProgress = Math.min(elapsed / particleLifespan, 1);
+                        
+                        // Apply velocity
+                        const speedFactor = 0.02 * (1 + particleProgress);
+                        particle.position.x += velocity[0] * speedFactor;
+                        particle.position.y += velocity[1] * speedFactor;
+                        particle.position.z += velocity[2] * speedFactor;
+                        
+                        // Apply rotation
+                        particle.rotation.x += rotation[0];
+                        particle.rotation.y += rotation[1];
+                        particle.rotation.z += rotation[2];
+                        
+                        // Scale particles down
+                        const particleScale = 1 - particleProgress;
+                        particle.scale.set(particleScale, particleScale, particleScale);
+                        
+                        // Fade out particle
+                        const fade = Math.max(0, 1 - particleProgress * 1.2);
+                        const pulse = 0.2 * Math.sin(particleProgress * 10);
+                        particle.material.opacity = fade + pulse;
+                        
+                        if (particleProgress >= 1) {
+                            particlesToRemove.push(particle);
+                        }
+                    }
+                    
+                    for (const particle of particlesToRemove) {
+                        particles.remove(particle);
+                    }
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(shrinkAndParticlesAnimation);
+                } else {
+                    // Animation complete - now update the grid
+                    
+                    // Remove animation objects
+                    this.clearingEffects.remove(particles);
+                    for (const block of lineBlocks) {
+                        this.clearingEffects.remove(block);
+                    }
+                    
+                    // Perform the actual grid update
+                    this.clearVerticalLine(y, z);
+                    
+                    // Invoke callback when done
+                    if (callback) callback();
+                }
+            };
+            
+            requestAnimationFrame(shrinkAndParticlesAnimation);
+        };
+        
+        // Start the animation sequence
+        requestAnimationFrame(flashAnimation);
+    }
+    
+    /**
+     * Clear a horizontal line and shift blocks down
+     */
+    clearHorizontalLine(x, z) {
+        // Shift all blocks above z down by one
+        for (let k = z; k < this.height - 1; k++) {
+            for (let y = 0; y < this.depth; y++) {
+                this.grid[x][y][k] = this.grid[x][y][k + 1];
+            }
+        }
+        
+        // Clear the top layer for this x position
+        for (let y = 0; y < this.depth; y++) {
+            this.grid[x][y][this.height - 1] = null;
+        }
+        
+        // Update visual blocks
+        this.updateVisualBlocks();
+    }
+    
+    /**
+     * Clear a vertical line and shift blocks down
+     */
+    clearVerticalLine(y, z) {
+        // Shift all blocks above z down by one
+        for (let k = z; k < this.height - 1; k++) {
+            for (let x = 0; x < this.width; x++) {
+                this.grid[x][y][k] = this.grid[x][y][k + 1];
+            }
+        }
+        
+        // Clear the top layer for this y position
+        for (let x = 0; x < this.width; x++) {
+            this.grid[x][y][this.height - 1] = null;
+        }
+        
+        // Update visual blocks
+        this.updateVisualBlocks();
+    }
+    
+    /**
+     * Check for and clear completed lines and layers
+     * Returns the total number of lines and layers cleared
+     */
+    checkAndClearLinesAndLayers(callback) {
+        // If animation already in progress, don't start a new one
+        if (this.clearAnimationInProgress) {
+            return 0;
+        }
+        
+        // Find completed lines and layers
+        const linesToClear = [];
+        const layersToClear = [];
+        
+        // Check for completed layers
+        for (let z = 0; z < this.height; z++) {
+            if (this.isLayerComplete(z)) {
+                layersToClear.push(z);
+            }
+        }
+        
+        // Check for completed horizontal lines
+        for (let z = 0; z < this.height; z++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.isHorizontalLineComplete(x, z)) {
+                    linesToClear.push({ type: 'horizontal', x, z });
+                }
+            }
+        }
+        
+        // Check for completed vertical lines
+        for (let z = 0; z < this.height; z++) {
+            for (let y = 0; y < this.depth; y++) {
+                if (this.isVerticalLineComplete(y, z)) {
+                    linesToClear.push({ type: 'vertical', y, z });
+                }
+            }
+        }
+        
+        const totalCleared = linesToClear.length + layersToClear.length;
+        
+        // If lines or layers to clear, start animation
+        if (totalCleared > 0) {
+            this.clearAnimationInProgress = true;
+            
+            // Add safety timeout to prevent infinite loops
+            const safetyTimeout = setTimeout(() => {
+                console.warn('Line/layer clearing animation timed out - forcing completion');
+                this.clearAnimationInProgress = false;
+                if (callback) callback(totalCleared);
+            }, 5000); // 5 second timeout
+            
+            // Process one line/layer at a time with animation
+            const processNext = () => {
+                if (linesToClear.length > 0) {
+                    const line = linesToClear.shift();
+                    if (line.type === 'horizontal') {
+                        this.clearHorizontalLineWithAnimation(line.x, line.z, () => {
+                            clearTimeout(safetyTimeout);
+                            processNext();
+                        });
+                    } else {
+                        this.clearVerticalLineWithAnimation(line.y, line.z, () => {
+                            clearTimeout(safetyTimeout);
+                            processNext();
+                        });
+                    }
+                } else if (layersToClear.length > 0) {
+                    const z = layersToClear.shift();
+                    // Adjust z index for layers that have already been cleared
+                    const adjustedZ = z - (layersToClear.length);
+                    this.clearLayerWithAnimation(adjustedZ, () => {
+                        clearTimeout(safetyTimeout);
+                        processNext();
+                    });
+                } else {
+                    // All lines and layers processed
+                    clearTimeout(safetyTimeout);
+                    this.clearAnimationInProgress = false;
+                    if (callback) callback(totalCleared);
+                }
+            };
+            
+            // Start processing lines and layers
+            processNext();
+        } else if (callback) {
+            // No lines or layers to clear, but still call callback with 0
+            callback(0);
+        }
+        
+        return totalCleared;
+    }
 } 

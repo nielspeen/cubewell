@@ -711,9 +711,9 @@ class Game {
         // Handle special block effect
         this.handleSpecialBlockEffect();
         
-        // Check for completed layers
-        const layersCleared = this.pit.checkAndClearLayers((clearedCount) => {
-            // Calculate score for cleared layers
+        // Check for completed lines and layers
+        const layersCleared = this.pit.checkAndClearLinesAndLayers((clearedCount) => {
+            // Calculate score for cleared lines and layers
             const layerScore = CONFIG.POINTS_PER_LAYER * clearedCount * (clearedCount + 1) / 2;
             this.addScore(layerScore);
             
@@ -727,10 +727,10 @@ class Game {
             }
         });
         
-        // Store the expected number of layers to be cleared
+        // Store the expected number of lines/layers to be cleared
         this.layersCleared = layersCleared;
         
-        // Play sound immediately if layers will be cleared
+        // Play sound immediately if lines or layers will be cleared
         if (layersCleared > 0 && this.sounds.clear) {
             this.sounds.clear();
         }
