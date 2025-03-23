@@ -28,7 +28,7 @@ class Game {
         
         // Current and next blocks
         this.currentBlock = null;
-        this.nextBlock = null;
+        this.nextBlocks = [];
         
         // Animation properties
         this.lastFrameTime = 0;
@@ -48,6 +48,9 @@ class Game {
         
         // Create background
         this.background = new DynamicBackground(this.scene);
+        
+        // Initialize block queue
+        this.generateNextBlocks(3); // Generate 3 blocks initially
     }
     
     /**
@@ -428,7 +431,6 @@ class Game {
         this.controls = new Controls(this);
         
         // Generate the first block
-        this.nextBlock = this.polycubeGenerator.generate();
         this.spawnBlock();
         
         // Start animation loop
@@ -616,11 +618,21 @@ class Game {
     }
     
     /**
+     * Generate next blocks and add them to the queue
+     */
+    generateNextBlocks(count) {
+        for (let i = 0; i < count; i++) {
+            const block = this.polycubeGenerator.generate();
+            this.nextBlocks.push(block);
+        }
+    }
+    
+    /**
      * Spawn a new block at the top of the pit
      */
     spawnBlock() {
-        // Create the new current block from the next block
-        this.currentBlock = this.nextBlock;
+        // Get the next block from the queue
+        this.currentBlock = this.nextBlocks.shift();
         
         // Position at top center of pit BEFORE creating the mesh
         this.currentBlock.position = [
@@ -629,8 +641,8 @@ class Game {
             CONFIG.PIT_HEIGHT - 1
         ];
         
-        // Generate next block in advance so it's ready before we render
-        const nextBlockTemp = this.polycubeGenerator.generate();
+        // Generate a new block to maintain the queue
+        const newBlock = this.polycubeGenerator.generate();
         
         // Check if the next block can be placed
         const nextBlockPosition = [
@@ -638,10 +650,10 @@ class Game {
             Math.floor(CONFIG.PIT_DEPTH / 2), 
             CONFIG.PIT_HEIGHT - 1
         ];
-        nextBlockTemp.position = nextBlockPosition;
+        newBlock.position = nextBlockPosition;
         
         // If next block can't be placed, game is over
-        if (!this.pit.canPlacePolycube(nextBlockTemp)) {
+        if (!this.pit.canPlacePolycube(newBlock)) {
             this.gameOver();
             return;
         }
@@ -649,16 +661,16 @@ class Game {
         // Create and add mesh to scene AFTER positioning
         const blockMesh = this.currentBlock.createMesh();
         
-        // Update UI to show next block before we render anything
+        // Add the new block to the queue
+        this.nextBlocks.push(newBlock);
+        
+        // Update UI to show next blocks
         if (this.ui) {
-            this.ui.updateNextBlockPreview(nextBlockTemp);
+            this.ui.updateNextBlockPreview(this.nextBlocks);
         }
         
         // Only add the mesh to the scene after everything else is ready
         this.gameContainer.add(blockMesh);
-        
-        // Set the next block
-        this.nextBlock = nextBlockTemp;
         
         // Highlight the block's position on the grid walls
         this.pit.highlightPosition(this.currentBlock);
@@ -1290,8 +1302,9 @@ class Game {
         // Reset polycube generator
         this.polycubeGenerator = new PolycubeGenerator();
         
-        // Generate new blocks
-        this.nextBlock = this.polycubeGenerator.generate();
+        // Reset and generate new blocks
+        this.nextBlocks = [];
+        this.generateNextBlocks(3);
         this.spawnBlock();
         
         // Update UI
@@ -1299,7 +1312,7 @@ class Game {
             this.ui.updateScore(0);
             this.ui.updateLevel(1);
             this.ui.hideGameOver();
-            this.ui.updateNextBlockPreview(this.nextBlock);
+            this.ui.updateNextBlockPreview(this.nextBlocks);
         }
 
         // Activate background

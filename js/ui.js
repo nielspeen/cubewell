@@ -30,7 +30,8 @@ class UI {
         
         // Camera for preview - adjusted position to show more of the block
         this.previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-        this.previewCamera.position.set(4, 4, 4); // Moved camera back further
+        // Adjusted camera position to be more perpendicular to the blocks
+        this.previewCamera.position.set(8, 8, 8);
         this.previewCamera.lookAt(0, 0, 0);
         
         // Renderer for preview with transparent background
@@ -67,53 +68,85 @@ class UI {
      */
     updatePreviewSize() {
         const rect = this.nextBlockPreview.getBoundingClientRect();
+        const aspect = rect.width / rect.height;
+        
+        // Update renderer size
         this.previewRenderer.setSize(rect.width, rect.height);
+        
+        // Update camera aspect ratio
+        this.previewCamera.aspect = aspect;
+        this.previewCamera.updateProjectionMatrix();
     }
     
     /**
      * Update the next block preview
      */
-    updateNextBlockPreview(nextBlock) {
+    updateNextBlockPreview(nextBlocks) {
         // Cancel any existing animation
         if (this.previewAnimation) {
             cancelAnimationFrame(this.previewAnimation);
             this.previewAnimation = null;
         }
         
-        // Remove existing preview mesh if it exists
-        if (this.previewMesh) {
-            this.previewScene.remove(this.previewMesh);
-            this.previewMesh = null;
+        // Remove existing preview meshes if they exist
+        if (this.previewMeshes) {
+            this.previewMeshes.forEach(mesh => {
+                if (mesh) this.previewScene.remove(mesh);
+            });
+            this.previewMeshes = [];
         }
         
-        if (nextBlock) {
-            // Clone the block for preview
-            const previewBlock = nextBlock.clone();
+        if (nextBlocks && nextBlocks.length > 0) {
+            this.previewMeshes = [];
             
-            // Reset position to center before creating mesh
-            previewBlock.position = [0, 0, 0];
+            // Calculate total height needed for all blocks
+            const totalHeight = (nextBlocks.length - 1) * 3; // Spacing between blocks
             
-            // Create the mesh but don't add to main scene
-            this.previewMesh = previewBlock.createMesh();
+            // Create preview meshes for each block
+            nextBlocks.forEach((block, index) => {
+                if (block) {
+                    // Clone the block for preview
+                    const previewBlock = block.clone();
+                    
+                    // Reset position to center before creating mesh
+                    previewBlock.position = [0, 0, 0];
+                    
+                    // Create the mesh but don't add to main scene
+                    const mesh = previewBlock.createMesh();
+                    
+                    // Scale down the mesh for preview
+                    mesh.scale.set(0.7, 0.7, 0.7);
+                    
+                    // Ensure the mesh is properly positioned before adding to the preview scene
+                    mesh.visible = false;
+                    
+                    // Center the block in view
+                    const bbox = new THREE.Box3().setFromObject(mesh);
+                    const center = bbox.getCenter(new THREE.Vector3());
+                    mesh.position.sub(center);
+                    
+                    // Position the block vertically based on its index
+                    // Center the entire group of blocks by offsetting by half the total height
+                    // Add a negative offset to move everything lower
+                    mesh.position.y = (nextBlocks.length - 1 - index) * 3 - (totalHeight / 2) - 2;
+                    
+                    // Add to preview scene
+                    this.previewScene.add(mesh);
+                    
+                    // Make visible
+                    mesh.visible = true;
+                    
+                    this.previewMeshes.push(mesh);
+                }
+            });
             
-            // Ensure the mesh is properly positioned before adding to the preview scene
-            this.previewMesh.visible = false;
-            
-            // Center the block in view
-            const bbox = new THREE.Box3().setFromObject(this.previewMesh);
-            const center = bbox.getCenter(new THREE.Vector3());
-            this.previewMesh.position.sub(center);
-            
-            // Add to preview scene
-            this.previewScene.add(this.previewMesh);
-            
-            // Make visible
-            this.previewMesh.visible = true;
-            
-            // Animate rotation
+            // Animate rotation with fixed angles to prevent warping
             const animate = (time) => {
-                this.previewMesh.rotation.y = time / 2000;
-                this.previewMesh.rotation.x = time / 3000;
+                this.previewMeshes.forEach(mesh => {
+                    // Restore smooth rotation but with slower speed
+                    mesh.rotation.y = time / 3000; // Slower Y rotation
+                    mesh.rotation.x = time / 4000; // Slower X rotation
+                });
                 this.previewRenderer.render(this.previewScene, this.previewCamera);
                 this.previewAnimation = requestAnimationFrame(animate);
             };
