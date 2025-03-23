@@ -1268,7 +1268,7 @@ class Game {
             targetRotation: targetRotation.clone(),
             startPosition: originalPosition,
             targetPosition: validPosition,
-            duration: 0.15, // Animation duration in seconds
+            duration: 0.075, // Animation duration in seconds (doubled speed)
             elapsed: 0,
             wasPaused: this.isPaused
         };
