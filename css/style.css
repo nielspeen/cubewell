@@ -334,4 +334,28 @@ body {
     padding: 8px;
     border-radius: 3px;
     background: rgba(0, 170, 255, 0.1);
+}
+
+#score-value {
+    display: inline-block;
+    transition: transform 0.3s ease-out;
+}
+
+.score-pop {
+    animation: scorePop 1s ease-out;
+}
+
+@keyframes scorePop {
+    0% {
+        transform: scale(1);
+        color: var(--text-color);
+    }
+    50% {
+        transform: scale(1.5);
+        color: #00ff00;
+    }
+    100% {
+        transform: scale(1);
+        color: var(--text-color);
+    }
 } 

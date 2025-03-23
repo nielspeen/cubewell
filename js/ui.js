@@ -127,6 +127,14 @@ class UI {
      */
     updateScore(score) {
         this.scoreElement.textContent = score;
+        
+        // Add animation class
+        this.scoreElement.classList.add('score-pop');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            this.scoreElement.classList.remove('score-pop');
+        }, 1000);
     }
     
     /**
