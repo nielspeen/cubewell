@@ -45,6 +45,7 @@ const CONFIG = {
     
     // Visual settings
     BLOCK_EDGE_WIDTH: 4,          // Width of block edges in pixels
+    BLOCK_OPACITY: 0.8,          // Opacity of blocks (0.0 to 1.0)
     
     // Starfield background settings
     STARFIELD: {

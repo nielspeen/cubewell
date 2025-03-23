@@ -369,7 +369,7 @@ class Pit {
         const edgeMaterial = new THREE.MeshBasicMaterial({ 
             color: 0xffffff,
             transparent: true,
-            opacity: 0.8,
+            opacity: CONFIG.BLOCK_OPACITY + 0.1, // Slightly more opaque than the main material
             side: THREE.BackSide // Only render the back faces for edge effect
         });
         
@@ -385,7 +385,7 @@ class Pit {
                             materials[color] = new THREE.MeshLambertMaterial({
                                 color: color,
                                 transparent: true,
-                                opacity: 0.7,
+                                opacity: CONFIG.BLOCK_OPACITY,
                                 side: THREE.DoubleSide,
                                 // Create a custom shader for the bottom face and layer tinting
                                 onBeforeCompile: (shader) => {

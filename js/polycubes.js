@@ -21,7 +21,7 @@ class Polycube {
         const material = new THREE.MeshLambertMaterial({ 
             color: this.color,
             transparent: true,
-            opacity: 0.7,
+            opacity: CONFIG.BLOCK_OPACITY,
             side: THREE.DoubleSide
         });
         
@@ -29,7 +29,7 @@ class Polycube {
         const edgeMaterial = new THREE.MeshBasicMaterial({ 
             color: 0xffffff,
             transparent: true,
-            opacity: 0.8,
+            opacity: CONFIG.BLOCK_OPACITY + 0.1, // Slightly more opaque than the main material
             side: THREE.BackSide // Only render the back faces for edge effect
         });
         
