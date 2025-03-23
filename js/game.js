@@ -687,34 +687,30 @@ class Game {
         
         // Check for completed layers
         const layersCleared = this.pit.checkAndClearLayers((clearedCount) => {
-            this.layersCleared = clearedCount;
+            // Calculate score for cleared layers
+            // Formula: 100 * layers * (layers + 1) / 2
+            // This gives: 1 layer = 100, 2 layers = 300, 3 layers = 600, etc.
+            const layerScore = CONFIG.POINTS_PER_LAYER * clearedCount * (clearedCount + 1) / 2;
+            this.addScore(layerScore);
             
-            if (clearedCount > 0) {
-                // Play sound
-                if (this.sounds.clear) {
-                    this.sounds.clear();
-                }
+            // Check if the pit is completely empty after clearing
+            if (this.pit.isPitEmpty()) {
+                // Award a bonus for clearing the entire pit
+                this.addScore(CONFIG.POINTS_PER_LAYER * 10); // 1000 points bonus
                 
-                // Calculate score for cleared layers
-                // Formula: 100 * layers * (layers + 1) / 2
-                // This gives: 1 layer = 100, 2 layers = 300, 3 layers = 600, etc.
-                const layerScore = CONFIG.POINTS_PER_LAYER * clearedCount * (clearedCount + 1) / 2;
-                this.addScore(layerScore);
-                
-                // Check if the pit is completely empty after clearing
-                if (this.pit.isPitEmpty()) {
-                    // Award a bonus for clearing the entire pit
-                    this.addScore(CONFIG.POINTS_PER_LAYER * 10); // 1000 points bonus
-                    
-                    // Play special effect for pit clear
-                    this.playPitClearEffect();
-                }
+                // Play special effect for pit clear
+                this.playPitClearEffect();
             }
         });
         
         // Store the expected number of layers to be cleared
         // This is needed for immediate sound effects before the animation completes
         this.layersCleared = layersCleared;
+        
+        // Play sound immediately if layers will be cleared
+        if (layersCleared > 0 && this.sounds.clear) {
+            this.sounds.clear();
+        }
         
         // Spawn a new block
         this.spawnBlock();

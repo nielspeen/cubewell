@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create high scores box
     const highScoresBox = document.createElement('div');
     highScoresBox.className = 'game-message high-scores-box';
-    highScoresBox.style.top = '30%'; // Position above the instructions box
+    highScoresBox.style.top = '25%'; // Position higher up to avoid overlap
     
     // Get high scores from localStorage
     const highScores = JSON.parse(localStorage.getItem(CONFIG.HIGH_SCORE_KEY) || '[]');

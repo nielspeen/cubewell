@@ -78,6 +78,25 @@ body {
     font-size: clamp(0.9rem, 2.5vmin, 1.2rem);
 }
 
+#game-over h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+#game-over ol {
+    list-style-position: inside;
+    padding: 0;
+    margin: 10px 0 0 0;
+    text-align: left;
+}
+
+#game-over li {
+    margin: 5px 0;
+    padding: 5px;
+    border-radius: 3px;
+    background: rgba(0, 170, 255, 0.1);
+}
+
 #restart-btn {
     margin-top: 15px;
     padding: clamp(8px, 2vmin, 15px) clamp(15px, 4vmin, 25px);
