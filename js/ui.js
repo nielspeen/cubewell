@@ -8,6 +8,7 @@ class UI {
         // UI elements
         this.scoreElement = document.getElementById('score-value');
         this.levelElement = document.getElementById('level-value');
+        this.blocksElement = document.getElementById('blocks-value');
         this.finalScoreElement = document.getElementById('final-score');
         this.gameOverPanel = document.getElementById('game-over');
         this.nextBlockPreview = document.getElementById('next-block');
@@ -15,6 +16,7 @@ class UI {
         // Initialize UI
         this.updateScore(0);
         this.updateLevel(1);
+        this.updateBlocks(0);
         this.hideGameOver();
         
         // Create scene for next block preview
@@ -185,6 +187,13 @@ class UI {
      */
     updateLevel(level) {
         this.levelElement.textContent = level;
+    }
+    
+    /**
+     * Update the blocks counter display
+     */
+    updateBlocks(blocks) {
+        this.blocksElement.textContent = blocks;
     }
     
     /**

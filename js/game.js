@@ -11,6 +11,7 @@ class Game {
         this.isGameOver = false;
         this.layersCleared = 0; // Track layers cleared for sound effects
         this.displacementTracking = { x: 0, y: 0, z: 0 }; // Track displacement during rotations
+        this.blocksPlaced = 0; // Track total blocks placed
         
         // Create Three.js scene
         this.setupScene();
@@ -697,6 +698,21 @@ class Game {
         // Add score for placing block
         this.addScore(CONFIG.POINTS_PER_BLOCK);
         
+        // Increment blocks placed counter
+        this.blocksPlaced++;
+        if (this.ui) {
+            this.ui.updateBlocks(this.blocksPlaced);
+        }
+        
+        // Increment special block counter only when a block is placed
+        this.polycubeGenerator.blocksSinceLastSpecial++;
+        console.log('Blocks since last special:', this.polycubeGenerator.blocksSinceLastSpecial, 'Next special in:', this.polycubeGenerator.nextSpecialBlockInterval);
+        
+        // Handle special block effect if this was a special block
+        if (this.currentBlock.isSpecial) {
+            this.handleSpecialBlockEffect();
+        }
+        
         // Check for completed layers
         const layersCleared = this.pit.checkAndClearLayers((clearedCount) => {
             // Calculate score for cleared layers
@@ -723,6 +739,44 @@ class Game {
         
         // Spawn a new block
         this.spawnBlock();
+    }
+    
+    /**
+     * Handle special block effect
+     */
+    handleSpecialBlockEffect() {
+        console.log('Special block effect triggered!');
+        
+        // Find a random filled layer to clear
+        const filledLayers = [];
+        for (let z = 0; z < CONFIG.PIT_HEIGHT; z++) {
+            let isFilled = true;
+            for (let x = 0; x < CONFIG.PIT_WIDTH; x++) {
+                for (let y = 0; y < CONFIG.PIT_DEPTH; y++) {
+                    if (this.pit.grid[x][y][z] === null) {
+                        isFilled = false;
+                        break;
+                    }
+                }
+                if (!isFilled) break;
+            }
+            if (isFilled) {
+                filledLayers.push(z);
+            }
+        }
+        
+        // If we found any filled layers, clear a random one
+        if (filledLayers.length > 0) {
+            const randomLayer = filledLayers[Math.floor(Math.random() * filledLayers.length)];
+            console.log('Clearing layer:', randomLayer);
+            this.pit.clearLayerWithAnimation(randomLayer, () => {
+                // Award bonus points for special block effect
+                this.addScore(CONFIG.POINTS_PER_LAYER * 2);
+                console.log('Special block effect completed!');
+            });
+        } else {
+            console.log('No filled layers found for special block effect');
+        }
     }
     
     /**
@@ -1290,6 +1344,7 @@ class Game {
         this.fallSpeed = CONFIG.INITIAL_FALL_SPEED;
         this.isGameOver = false;
         this.isPaused = false;
+        this.blocksPlaced = 0; // Reset blocks placed counter
         
         // Reset pit
         this.pit.reset();
@@ -1299,7 +1354,7 @@ class Game {
             this.gameContainer.remove(this.currentBlock.mesh);
         }
         
-        // Reset polycube generator
+        // Reset polycube generator (this will reset special block tracking)
         this.polycubeGenerator = new PolycubeGenerator();
         
         // Reset and generate new blocks
@@ -1311,6 +1366,7 @@ class Game {
         if (this.ui) {
             this.ui.updateScore(0);
             this.ui.updateLevel(1);
+            this.ui.updateBlocks(0);
             this.ui.hideGameOver();
             this.ui.updateNextBlockPreview(this.nextBlocks);
         }
@@ -1423,7 +1479,15 @@ class Game {
         this.isGameOver = false;
         this.isPaused = false;
         this.pit.clear();
+        
+        // Reset polycube generator (this will reset special block tracking)
+        this.polycubeGenerator = new PolycubeGenerator();
+        
+        // Generate initial blocks
+        this.nextBlocks = [];
+        this.generateNextBlocks(3);
         this.spawnBlock();
+        
         this.updateScore();
         this.updateLevel();
         this.background.setActive(true); // Activate background when game starts

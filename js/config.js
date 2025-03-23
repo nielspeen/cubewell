@@ -47,6 +47,14 @@ const CONFIG = {
     BLOCK_EDGE_WIDTH: 4,          // Width of block edges in pixels
     BLOCK_OPACITY: 0.8,          // Opacity of blocks (0.0 to 1.0)
     
+    // Special block settings
+    SPECIAL_BLOCK: {
+        MIN_INTERVAL: 15,         // Minimum blocks between special blocks
+        MAX_INTERVAL: 20,         // Maximum blocks between special blocks
+        COLOR: 0xffffff,         // Pure white for special blocks - completely different from regular colors
+        EFFECT_DURATION: 0.5,     // Duration of special effect in seconds
+    },
+    
     // Starfield background settings
     STARFIELD: {
         INITIAL_STARS: 1200,      // Number of stars to start with

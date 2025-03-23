@@ -8,6 +8,7 @@ class Polycube {
         this.rotation = new THREE.Quaternion(); // Current rotation
         this.mesh = null;  // THREE.js Group containing the block meshes
         this.color = color;
+        this.isSpecial = false; // Default to not special
     }
     
     /**
@@ -117,6 +118,7 @@ class Polycube {
         const newPolycube = new Polycube([...this.blocks], this.color);
         newPolycube.position = [...this.position];
         newPolycube.rotation = this.rotation.clone();
+        newPolycube.isSpecial = this.isSpecial;
         return newPolycube;
     }
 }
@@ -171,8 +173,18 @@ class PolycubeGenerator {
         // Bag for shape selection (to avoid repetition)
         this.bag = [...this.availableShapes];
         
-        // Current level (for introducing new shapes)
-        this.level = 1;
+        // Special block tracking
+        this.blocksSinceLastSpecial = 0;
+        this.nextSpecialBlockInterval = this.getRandomSpecialInterval();
+    }
+    
+    /**
+     * Get a random interval for the next special block
+     */
+    getRandomSpecialInterval() {
+        return Math.floor(Math.random() * 
+            (CONFIG.SPECIAL_BLOCK.MAX_INTERVAL - CONFIG.SPECIAL_BLOCK.MIN_INTERVAL + 1)) + 
+            CONFIG.SPECIAL_BLOCK.MIN_INTERVAL;
     }
     
     /**
@@ -208,6 +220,19 @@ class PolycubeGenerator {
         // If bag is empty, refill it
         if (this.bag.length === 0) {
             this.bag = [...this.availableShapes];
+        }
+        
+        // Check if we should generate a special block
+        if (this.blocksSinceLastSpecial >= this.nextSpecialBlockInterval) {
+            // Reset special block tracking
+            this.blocksSinceLastSpecial = 0;
+            this.nextSpecialBlockInterval = this.getRandomSpecialInterval();
+            
+            // Generate a special block (using I3 shape for simplicity)
+            const specialBlock = new Polycube(this.shapes.I3.blocks, CONFIG.SPECIAL_BLOCK.COLOR);
+            specialBlock.isSpecial = true; // Mark as special block
+            console.log('Generated special block! Next special in:', this.nextSpecialBlockInterval, 'blocks');
+            return specialBlock;
         }
         
         // Pick a random shape from the bag
