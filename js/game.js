@@ -688,15 +688,13 @@ class Game {
         // Check for completed layers
         const layersCleared = this.pit.checkAndClearLayers((clearedCount) => {
             // Calculate score for cleared layers
-            // Formula: 100 * layers * (layers + 1) / 2
-            // This gives: 1 layer = 100, 2 layers = 300, 3 layers = 600, etc.
             const layerScore = CONFIG.POINTS_PER_LAYER * clearedCount * (clearedCount + 1) / 2;
             this.addScore(layerScore);
             
             // Check if the pit is completely empty after clearing
             if (this.pit.isPitEmpty()) {
                 // Award a bonus for clearing the entire pit
-                this.addScore(CONFIG.POINTS_PER_LAYER * 10); // 1000 points bonus
+                this.addScore(CONFIG.POINTS_PER_LAYER * 10);
                 
                 // Play special effect for pit clear
                 this.playPitClearEffect();
@@ -704,7 +702,6 @@ class Game {
         });
         
         // Store the expected number of layers to be cleared
-        // This is needed for immediate sound effects before the animation completes
         this.layersCleared = layersCleared;
         
         // Play sound immediately if layers will be cleared
