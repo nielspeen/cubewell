@@ -39,7 +39,6 @@ class Game {
         // Set up UI and controls after the game instance is created
         this.ui = null;
         this.controls = null;
-        this.multiplayer = null;
         
         // Audio elements
         this.setupAudio();
@@ -427,7 +426,6 @@ class Game {
     initialize() {
         this.ui = new UI(this);
         this.controls = new Controls(this);
-        this.multiplayer = new Multiplayer(this);
         
         // Generate the first block
         this.nextBlock = this.polycubeGenerator.generate();
@@ -993,11 +991,6 @@ class Game {
             this.ui.updateScore(this.score);
         }
         
-        // Update multiplayer score
-        if (this.multiplayer) {
-            this.multiplayer.updateScore(this.score);
-        }
-        
         // Check for level up
         const newLevel = Math.floor(this.score / CONFIG.LEVEL_UP_SCORE) + 1;
         if (newLevel > this.level) {
@@ -1282,11 +1275,6 @@ class Game {
             this.ui.updateLevel(1);
             this.ui.hideGameOver();
             this.ui.updateNextBlockPreview(this.nextBlock);
-        }
-        
-        // Reset multiplayer data
-        if (this.multiplayer) {
-            this.multiplayer.updateScore(0);
         }
     }
     

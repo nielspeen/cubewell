@@ -32,10 +32,6 @@ const CONFIG = {
         0x4169e1, // Gyarados Blue - Royal blue
     ],
     
-    // Multiplayer
-    PLAYER_NAME_KEY: 'spacecubes_player_name', // localStorage key for player name
-    HIGH_SCORE_KEY: 'spacecubes_high_scores',  // localStorage key for high scores
-    
     // Device detection
     IS_MOBILE: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
     
