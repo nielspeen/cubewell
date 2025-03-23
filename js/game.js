@@ -1105,15 +1105,10 @@ class Game {
             return false;
         }
         
-        // Revert to original rotation and position for animation
-        this.currentBlock.rotation.copy(originalRotation);
-        this.currentBlock.position = originalPosition;
-        this.currentBlock.updateMesh();
-        
         // Create rotation animation
         this.rotationAnimation = {
-            startRotation: originalRotation,
-            targetRotation: targetRotation,
+            startRotation: originalRotation.clone(),
+            targetRotation: targetRotation.clone(),
             startPosition: originalPosition,
             targetPosition: validPosition,
             duration: 0.15, // Animation duration in seconds
@@ -1123,13 +1118,6 @@ class Game {
         
         // Temporarily pause game during rotation
         this.isPaused = true;
-        
-        // Update position highlighting after rotation completes
-        setTimeout(() => {
-            if (this.currentBlock) {
-                this.pit.highlightPosition(this.currentBlock);
-            }
-        }, 150); // Match with rotation duration
         
         // Play sound
         if (this.sounds.rotate) {
