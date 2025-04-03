@@ -843,120 +843,153 @@ class Game {
      * Play a special effect when the player clears the entire pit
      */
     playPitClearEffect() {
-        // Create an effect with explosions and particles
-        const pitCenter = [
+        const pitCenter = new THREE.Vector3(
             this.pit.width / 2,
             this.pit.depth / 2,
             this.pit.height / 2
-        ];
-        
-        // Create explosion particles
-        const particles = new THREE.Group();
-        this.gameContainer.add(particles);
-        
-        // Create 100 particles
-        for (let i = 0; i < 100; i++) {
-            // Random color particles
-            const hue = Math.random();
-            const color = new THREE.Color().setHSL(hue, 1, 0.5);
-            
-            // Random particle size
-            const particleSize = 0.1 + Math.random() * 0.4;
-            
-            // Random geometry type for variety
-            let geometry;
-            const geoType = Math.floor(Math.random() * 4);
-            if (geoType === 0) {
-                geometry = new THREE.BoxGeometry(particleSize, particleSize, particleSize);
-            } else if (geoType === 1) {
-                geometry = new THREE.SphereGeometry(particleSize / 2, 4, 4);
-            } else if (geoType === 2) {
-                geometry = new THREE.TetrahedronGeometry(particleSize / 2);
-            } else {
-                geometry = new THREE.OctahedronGeometry(particleSize / 2);
-            }
-            
-            const material = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: 0.9
-            });
-            
-            const particle = new THREE.Mesh(geometry, material);
-            
-            // Start all particles from center
-            particle.position.set(
-                pitCenter[0] + (Math.random() - 0.5) * 2,
-                pitCenter[1] + (Math.random() - 0.5) * 2,
-                pitCenter[2] + (Math.random() - 0.5) * 2
+        );
+        const count = 100;
+
+        // Reusable geometry and material
+        // Use BoxGeometry as a base, different shapes per instance aren't easy with InstancedMesh
+        const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3); 
+        const material = new THREE.MeshBasicMaterial({
+            // Use vertexColors or instanceColors - instanceColor is simpler here
+            // color: 0xffffff, // Base color if not using instance colors
+            transparent: true,
+            opacity: 0.9,
+        });
+
+        const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
+        this.gameContainer.add(instancedMesh);
+
+        // Store instance-specific data
+        const dummy = new THREE.Object3D(); // Helper object for matrix calculation
+        const velocities = [];
+        const rotations = [];
+        const initialColors = []; // Store initial HSL for pulsing
+
+        const color = new THREE.Color(); // Reusable color object
+
+        for (let i = 0; i < count; i++) {
+            // Initial Position (randomly around center)
+            dummy.position.set(
+                pitCenter.x + (Math.random() - 0.5) * 2,
+                pitCenter.y + (Math.random() - 0.5) * 2,
+                pitCenter.z + (Math.random() - 0.5) * 2
             );
-            
+            dummy.updateMatrix();
+            instancedMesh.setMatrixAt(i, dummy.matrix);
+
+            // Initial Color
+            const hue = Math.random();
+            color.setHSL(hue, 1, 0.5);
+            instancedMesh.setColorAt(i, color);
+            initialColors.push({ h: hue, s: 1, l: 0.5 }); // Store HSL
+
             // Random 3D velocity direction
             const speed = 2 + Math.random() * 5;
             const angle = Math.random() * Math.PI * 2;
-            const elevation = Math.random() * Math.PI * 2;
-            
-            particle.userData.velocity = [
-                speed * Math.cos(angle) * Math.cos(elevation),
-                speed * Math.sin(angle) * Math.cos(elevation),
-                speed * Math.sin(elevation)
-            ];
-            
-            // Random rotation
-            particle.userData.rotation = [
-                (Math.random() - 0.5) * 0.2,
-                (Math.random() - 0.5) * 0.2,
-                (Math.random() - 0.5) * 0.2
-            ];
-            
-            particles.add(particle);
+            const elevation = Math.random() * Math.PI * 2; // Use full sphere for direction
+            velocities.push(
+                new THREE.Vector3(
+                    speed * Math.cos(angle) * Math.cos(elevation),
+                    speed * Math.sin(angle) * Math.cos(elevation),
+                    speed * Math.sin(elevation)
+                )
+            );
+
+            // Random rotation speed (axis can be complex, simple Euler rotation for now)
+            rotations.push(
+                new THREE.Euler(
+                    (Math.random() - 0.5) * Math.PI * 0.1, // Slower rotation
+                    (Math.random() - 0.5) * Math.PI * 0.1,
+                    (Math.random() - 0.5) * Math.PI * 0.1
+                )
+            );
         }
-        
+        instancedMesh.instanceMatrix.needsUpdate = true;
+        instancedMesh.instanceColor.needsUpdate = true;
+
         // Animation variables
         const startTime = performance.now();
         const duration = 2.0; // seconds
+
+        // Store data needed by the animation function
+        instancedMesh.userData.velocities = velocities;
+        instancedMesh.userData.rotations = rotations;
+        instancedMesh.userData.initialColors = initialColors;
+        instancedMesh.userData.startTime = startTime;
+        instancedMesh.userData.duration = duration;
         
-        // Explosion animation function
+        // Need references for matrix/color updates
+        const matrix = new THREE.Matrix4();
+        const position = new THREE.Vector3();
+        const quaternion = new THREE.Quaternion();
+        const scale = new THREE.Vector3(1, 1, 1); // Assuming uniform scale
+        const currentRotation = new THREE.Euler();
+        const tempColor = new THREE.Color(); // Reusable color for updates
+
+        // Explosion animation function using InstancedMesh
         const animateExplosion = () => {
-            const elapsed = (performance.now() - startTime) / 1000;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            if (progress < 1) {
-                // Move and animate particles
-                for (let i = 0; i < particles.children.length; i++) {
-                    const particle = particles.children[i];
-                    const velocity = particle.userData.velocity;
-                    const rotation = particle.userData.rotation;
-                    
-                    // Apply velocity - particles move faster as they go further
+            const elapsed = (performance.now() - instancedMesh.userData.startTime) / 1000;
+            const progress = Math.min(elapsed / instancedMesh.userData.duration, 1);
+
+            if (progress < 1 && instancedMesh.parent) { // Check if still attached
+                for (let i = 0; i < count; i++) {
+                    // Get current matrix
+                    instancedMesh.getMatrixAt(i, matrix);
+                    position.setFromMatrixPosition(matrix); // Get current position
+
+                    // Get instance data
+                    const vel = instancedMesh.userData.velocities[i];
+                    const rot = instancedMesh.userData.rotations[i];
+                    const initialHSL = instancedMesh.userData.initialColors[i];
+
+                    // Apply velocity
                     const speedFactor = 0.02 * (1 + progress * 0.5);
-                    particle.position.x += velocity[0] * speedFactor;
-                    particle.position.y += velocity[1] * speedFactor;
-                    particle.position.z += velocity[2] * speedFactor;
+                    position.addScaledVector(vel, speedFactor);
+
+                    // Apply rotation (simple accumulation)
+                    currentRotation.setFromRotationMatrix(matrix); // Get current rotation
+                    currentRotation.x += rot.x;
+                    currentRotation.y += rot.y;
+                    currentRotation.z += rot.z;
+                    quaternion.setFromEuler(currentRotation);
+
+                    // Update matrix
+                    matrix.compose(position, quaternion, scale);
+                    instancedMesh.setMatrixAt(i, matrix);
                     
-                    // Apply rotation
-                    particle.rotation.x += rotation[0];
-                    particle.rotation.y += rotation[1];
-                    particle.rotation.z += rotation[2];
-                    
-                    // Fade out gradually
-                    particle.material.opacity = Math.max(0, 1 - progress * 1.2);
-                    
-                    // Add color pulsing
-                    const hue = (particle.material.color.getHSL({h:0,s:0,l:0}).h + 0.01) % 1;
-                    particle.material.color.setHSL(hue, 1, 0.5 + Math.sin(progress * 10) * 0.2);
+                    // Update color (pulsing)
+                    const hue = (initialHSL.h + elapsed * 0.5) % 1; // Pulse hue over time
+                    tempColor.setHSL(hue, initialHSL.s, initialHSL.l + Math.sin(elapsed * 10 + i) * 0.1); // Pulse lightness
+                    instancedMesh.setColorAt(i, tempColor);
                 }
-                
+
+                // Update shared material properties
+                instancedMesh.material.opacity = Math.max(0, 1 - progress * 1.2);
+                instancedMesh.material.needsUpdate = true; // Necessary if opacity changes
+
+                // Mark instance attributes for update
+                instancedMesh.instanceMatrix.needsUpdate = true;
+                instancedMesh.instanceColor.needsUpdate = true;
+
                 requestAnimationFrame(animateExplosion);
             } else {
-                // Remove particles when animation completes
-                this.gameContainer.remove(particles);
+                // Remove particles when animation completes or mesh is removed
+                if (instancedMesh.parent) {
+                    this.gameContainer.remove(instancedMesh);
+                }
+                // Dispose of geometry and material to free memory
+                instancedMesh.geometry.dispose();
+                instancedMesh.material.dispose();
             }
         };
-        
+
         // Play special sound for pit clear
         this.playPitClearSound();
-        
+
         // Start animation
         requestAnimationFrame(animateExplosion);
     }
@@ -1431,8 +1464,15 @@ class Game {
             this.ui.updateNextBlockPreview(this.nextBlocks);
         }
 
-        // Activate background
-        if (this.background) {
+        // Recreate or activate background
+        // If cleanup removed it, we need to recreate it.
+        // Ensure DynamicBackground handles being created multiple times if necessary,
+        // or modify cleanupResources to not remove it if it should persist.
+        if (!this.background || !this.scene.children.includes(this.background.sceneObject)) { // Check if background needs creation/re-adding
+            // If DynamicBackground adds itself to the scene, just creating it might be enough
+            this.background = new DynamicBackground(this.scene);
+        } else {
+             // If it wasn't removed, just ensure it's active
             this.background.setActive(true);
         }
 
